@@ -1,0 +1,5 @@
+{
+  "name": "UX Insight Auditor",
+  "description": "A professional AI-powered UX audit tool using Gemini 2.5 Flash to analyze UI screenshots against Nielsen's Heuristics.",
+  "requestFramePermissions": []
+}
