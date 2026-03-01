@@ -9,11 +9,14 @@ import { ImageViewer } from './components/ImageViewer';
 import { HistoryModal } from './components/HistoryModal';
 import { AuthForm } from './components/AuthForm';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
+import { Sidebar } from './components/Sidebar';
+import { AssignmentManagement } from './components/AssignmentManagement';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, PieChart, Pie, Legend } from 'recharts';
 import { User } from 'firebase/auth';
+import { getSubmissionsByAssignment, submitToFirestore } from './services/firestoreService';
 
 // --- View Types ---
-type ViewState = 'LANDING' | 'STUDENT_ONBOARDING' | 'AUDITOR' | 'SUBMISSION_SUCCESS' | 'PROF_LOGIN' | 'PROF_DASHBOARD' | 'RESET_PASSWORD';
+type ViewState = 'LANDING' | 'STUDENT_ONBOARDING' | 'AUDITOR' | 'SUBMISSION_SUCCESS' | 'PROF_LOGIN' | 'PROF_DASHBOARD' | 'PROF_ASSIGNMENTS' | 'PROF_PROFILE' | 'RESET_PASSWORD';
 
 const App: React.FC = () => {
   // --- Routing State ---
@@ -69,9 +72,17 @@ const App: React.FC = () => {
   useEffect(() => {
     setSavedAudits(getSavedAudits());
     if (currentView === 'PROF_DASHBOARD') {
-      setSubmissions(getProfessorSubmissions());
+      const loadSubmissions = async () => {
+        if (assignmentId) {
+          const subs = await getSubmissionsByAssignment(assignmentId);
+          setSubmissions(subs);
+        } else {
+          setSubmissions(getProfessorSubmissions());
+        }
+      };
+      loadSubmissions();
     }
-  }, [currentView]);
+  }, [currentView, assignmentId]);
 
   // --- Actions ---
 
@@ -161,8 +172,9 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSubmitAssignment = () => {
+  const handleSubmitAssignment = async () => {
     if (!selectedImage || reports.length === 0) return;
+    setLoading(true);
     try {
       const auditData: SavedAudit = {
         id: Date.now().toString(),
@@ -175,14 +187,31 @@ const App: React.FC = () => {
         wcagLevel: wcagLevel
       };
 
+      // Generate Reference Code (keeping same logic as storageService for simplicity)
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const refCode = `UX-${randomSuffix}`;
+
+      const submission = {
+        refCode,
+        studentName,
+        studentId,
+        assignmentId,
+        professorId: "PROF_PLACEHOLDER", // This should be handled better if we know the prof ID
+        timestamp: Date.now(),
+        auditData
+      };
+
+      const savedSubmission = await submitToFirestore(submission);
+      setLastSubmission(savedSubmission as StudentSubmission);
+      setCurrentView('SUBMISSION_SUCCESS');
+
+      // Also save locally for history
       saveAudit(auditData);
       setSavedAudits(getSavedAudits());
-
-      const submission = submitAssignment(studentName, studentId, assignmentId, auditData);
-      setLastSubmission(submission);
-      setCurrentView('SUBMISSION_SUCCESS');
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to submit assignment.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -364,113 +393,171 @@ const App: React.FC = () => {
     );
   }
 
-  if (currentView === 'PROF_LOGIN') {
+  if (currentView.startsWith('PROF_')) {
+    if (currentView === 'PROF_LOGIN') {
+      return (
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+          <AuthForm
+            onSuccess={() => setCurrentView('PROF_DASHBOARD')}
+            onBack={() => setCurrentView('LANDING')}
+            initialMode={authMode}
+          />
+        </div>
+      );
+    }
+
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-        <AuthForm
-          onSuccess={() => setCurrentView('PROF_DASHBOARD')}
-          onBack={() => setCurrentView('LANDING')}
-          initialMode={authMode}
+      <div className="flex min-h-screen bg-slate-50">
+        <Sidebar
+          currentView={currentView}
+          onNavigate={setCurrentView}
+          onLogout={async () => { await firebaseLogout(); setCurrentView('LANDING'); }}
+          userEmail={user?.email}
         />
-      </div>
-    );
-  }
+        <main className="flex-1 overflow-y-auto">
+          {currentView === 'PROF_DASHBOARD' && (
+            <div className="p-8 space-y-6">
+              {/* Professor Dashboard Content */}
+              {(() => {
+                const totalSubs = submissions.length;
+                const avgScore = totalSubs > 0 ? Math.round(submissions.reduce((acc, s) => acc + s.auditData.reports.reduce((rAcc, r) => rAcc + r.overall_score, 0) / s.auditData.reports.length, 0) / totalSubs) : 0;
 
-  if (currentView === 'PROF_DASHBOARD') {
-    const totalSubs = submissions.length;
-    const avgScore = totalSubs > 0 ? Math.round(submissions.reduce((acc, s) => acc + s.auditData.reports.reduce((rAcc, r) => rAcc + r.overall_score, 0) / s.auditData.reports.length, 0) / totalSubs) : 0;
+                const handleExport = () => {
+                  const csvContent = "data:text/csv;charset=utf-8,"
+                    + "Timestamp,RefCode,StudentName,AssignmentID,Score,RiskLevel\n"
+                    + submissions.map(s => {
+                      const score = Math.round(s.auditData.reports.reduce((acc, r) => acc + r.overall_score, 0) / s.auditData.reports.length);
+                      const risk = s.auditData.reports.some(r => r.risk_level === 'Fail') ? 'Fail' : 'Pass';
+                      return `${new Date(s.timestamp).toISOString()},${s.refCode},${s.studentName},${s.assignmentId},${score},${risk}`;
+                    }).join("\n");
 
-    const handleExport = () => {
-      const csvContent = "data:text/csv;charset=utf-8,"
-        + "Timestamp,RefCode,StudentName,AssignmentID,Score,RiskLevel\n"
-        + submissions.map(s => {
-          const score = Math.round(s.auditData.reports.reduce((acc, r) => acc + r.overall_score, 0) / s.auditData.reports.length);
-          const risk = s.auditData.reports.some(r => r.risk_level === 'Fail') ? 'Fail' : 'Pass';
-          return `${new Date(s.timestamp).toISOString()},${s.refCode},${s.studentName},${s.assignmentId},${score},${risk}`;
-        }).join("\n");
+                  const encodedUri = encodeURI(csvContent);
+                  const link = document.createElement("a");
+                  link.setAttribute("href", encodedUri);
+                  link.setAttribute("download", `ux_audit_${assignmentId}_submissions.csv`);
+                  document.body.appendChild(link);
+                  link.click();
+                };
 
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "ux_audit_submissions.csv");
-      document.body.appendChild(link);
-      link.click();
-    };
+                return (
+                  <div className="max-w-7xl mx-auto space-y-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex items-center gap-3">
+                        <h1 className="text-2xl font-bold text-slate-900">Assignment Overview</h1>
+                        <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wider">{assignmentId}</span>
+                      </div>
+                      <button onClick={handleExport} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        Export CSV
+                      </button>
+                    </div>
 
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
-        <header className="bg-slate-900 text-white shadow-md">
-          <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="font-bold text-xl">Analyst Dashboard</div>
-              <span className="px-2 py-0.5 bg-slate-700 rounded text-xs text-slate-300">{assignmentId}</span>
-            </div>
-            <div className="flex gap-4">
-              <button onClick={handleExport} className="text-sm bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded">Export CSV</button>
-              <button onClick={async () => { await firebaseLogout(); setCurrentView('LANDING'); }} className="text-sm text-slate-400 hover:text-white">Logout</button>
-            </div>
-          </div>
-        </header>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 className="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Submissions</h3>
+                        <div className="text-4xl font-black text-slate-800 mt-2">{totalSubs}</div>
+                      </div>
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 className="text-slate-500 text-sm font-bold uppercase tracking-wider">Class Average</h3>
+                        <div className={`text-4xl font-black mt-2 ${avgScore >= 70 ? 'text-green-600' : 'text-yellow-600'}`}>{avgScore}%</div>
+                      </div>
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 className="text-slate-500 text-sm font-bold uppercase tracking-wider">Target Assignment</h3>
+                        <div className="text-4xl font-black text-indigo-600 mt-2 truncate">{assignmentId}</div>
+                      </div>
+                    </div>
 
-        <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <h3 className="text-slate-500 text-sm font-medium">Total Submissions</h3>
-              <div className="text-3xl font-bold text-slate-800 mt-2">{totalSubs}</div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                      <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-slate-800">Student Submissions</h3>
+                          <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[10px] font-bold uppercase">{totalSubs}</span>
+                        </div>
+                        <button onClick={() => { if (confirm("Clear all data?")) { clearAllSubmissions(); setSubmissions([]); } }} className="text-xs text-red-500 font-bold hover:underline">Reset Data</button>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200">
+                          <thead className="bg-slate-50">
+                            <tr>
+                              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Timestamp</th>
+                              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Student Info</th>
+                              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Ref Code</th>
+                              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Audit Score</th>
+                              <th className="px-6 py-4 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-slate-100">
+                            {submissions.length === 0 ? (
+                              <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-medium">No submissions for this assignment yet.</td></tr>
+                            ) : (
+                              submissions.map((sub, idx) => {
+                                const score = Math.round(sub.auditData.reports.reduce((acc, r) => acc + r.overall_score, 0) / sub.auditData.reports.length);
+                                return (
+                                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                    <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">{new Date(sub.timestamp).toLocaleString()}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                      <div className="text-sm font-bold text-slate-900">{sub.studentName}</div>
+                                      <div className="text-[10px] text-slate-400 font-mono tracking-tight">{sub.studentId || 'ID Not Provided'}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 font-black font-mono tracking-wider">{sub.refCode}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                      <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-black rounded-lg ${score >= 80 ? 'bg-green-100 text-green-800' : score >= 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                                        {score}%
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                      <button onClick={() => handleLoadSubmission(sub)} className="text-indigo-600 hover:text-indigo-900 font-bold text-sm bg-indigo-50 px-3 py-1.5 rounded-lg transition-all">Details</button>
+                                    </td>
+                                  </tr>
+                                )
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <h3 className="text-slate-500 text-sm font-medium">Class Average Score</h3>
-              <div className={`text-3xl font-bold mt-2 ${avgScore >= 70 ? 'text-green-600' : 'text-yellow-600'}`}>{avgScore}</div>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <h3 className="text-slate-500 text-sm font-medium">Active Assignment</h3>
-              <div className="text-3xl font-bold text-indigo-600 mt-2">{assignmentId}</div>
-            </div>
-          </div>
+          )}
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-bold text-slate-800">Student Submissions</h3>
-              <button onClick={() => { if (confirm("Clear all data?")) { clearAllSubmissions(); setSubmissions([]); } }} className="text-xs text-red-500 hover:underline">Reset Data</button>
+          {currentView === 'PROF_ASSIGNMENTS' && (
+            <AssignmentManagement
+              professorId={user?.uid || ""}
+              onSelectAssignment={(id) => {
+                setAssignmentId(id);
+                setCurrentView('PROF_DASHBOARD');
+              }}
+            />
+          )}
+
+          {currentView === 'PROF_PROFILE' && (
+            <div className="p-8 max-w-4xl mx-auto w-full">
+              <h1 className="text-3xl font-bold text-slate-900 mb-8">Profile Settings</h1>
+              <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+                <div className="flex items-center gap-6 mb-10">
+                  <div className="w-20 h-20 bg-indigo-600 rounded-full flex items-center justify-center text-3xl text-white font-bold">
+                    {user?.email?.[0].toUpperCase() || 'P'}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">{user?.email || 'Professor'}</h2>
+                    <p className="text-slate-500">Instructor Account</p>
+                  </div>
+                </div>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-1.5">User ID</label>
+                    <div className="bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 font-mono text-xs text-slate-400">{user?.uid}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-1.5">Email Address</label>
+                    <div className="bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 text-slate-700">{user?.email}</div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Time</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Student</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Ref Code</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Score</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-slate-200">
-                  {submissions.length === 0 ? (
-                    <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-400">No submissions yet.</td></tr>
-                  ) : (
-                    submissions.map((sub, idx) => {
-                      const score = Math.round(sub.auditData.reports.reduce((acc, r) => acc + r.overall_score, 0) / sub.auditData.reports.length);
-                      return (
-                        <tr key={idx} className="hover:bg-slate-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{new Date(sub.timestamp).toLocaleTimeString()}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{sub.studentName} <span className="text-slate-400 font-normal">({sub.studentId || 'N/A'})</span></td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 font-mono">{sub.refCode}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${score >= 80 ? 'bg-green-100 text-green-800' : score >= 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                              {score}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                            <button onClick={() => handleLoadSubmission(sub)} className="text-indigo-600 hover:text-indigo-900">View Audit</button>
-                          </td>
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          )}
         </main>
       </div>
     );

@@ -9,7 +9,7 @@ export type IssueCategory = 'UX' | 'WCAG';
 
 export interface Finding {
   id: string;
-  category: IssueCategory; 
+  category: IssueCategory;
   rule_id: string; // e.g., "H1" or "1.4.3"
   element_name: string;
   location_box: BoundingBox;
@@ -51,7 +51,7 @@ export interface SavedAudit {
   timestamp: number;
   imageSrc: string; // Base64
   reports: UsabilityReport[];
-  heuristicMode: string; 
+  heuristicMode: string;
   persona: Persona;
   auditScope: AuditScope;
   wcagLevel: WcagLevel;
@@ -59,11 +59,22 @@ export interface SavedAudit {
 
 // --- New Types for Platform Features ---
 
+export interface Assignment {
+  id: string;
+  professorId: string;
+  title: string;
+  description: string;
+  createdAt: number;
+  status: 'active' | 'archived';
+}
+
 export interface StudentSubmission {
+  id?: string; // Firestore ID
   refCode: string; // UX-XXXX format
   studentName: string;
   studentId: string; // Optional
   assignmentId: string;
+  professorId: string;
   timestamp: number;
   auditData: SavedAudit;
 }
