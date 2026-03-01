@@ -17,17 +17,59 @@ import { Assignment, StudentSubmission } from "../types";
 const ASSIGNMENTS_COLLECTION = "assignments";
 const SUBMISSIONS_COLLECTION = "submissions";
 
+// const WORDS = ["STUDY", "AUDIT", "DESIGN", "USER", "PLAN", "HEURISTIC", "UX", "RESEARCH", "TEST", "CHECK", "REVIEW", "FLOW", "BEHAVIOR", "BELIEVE", "ALPHA", "BETA", ];
+// const WORDS = [
+// "LION","TIGER","PANDA","HORSE","MOUSE","SHEEP","GOOSE","CAMEL","ZEBRA","HYENA",
+// "OTTER","KOALA","LEMUR","RHINO","BISON","ELK","MOOSE","DEER","LLAMA","ALPACA",
+// "WHALE","SHARK","EAGLE","RAVEN","ROBIN","CROW","DOVE","SWAN","CRANE","HERON",
+// "FINCH","OWL","EMU","KIWI","DUCK","GOAT","PIG","DOG","CAT","BAT",
+// "SEAL","SQUID","CRAB","CLAM","PERCH","TROUT","SMELT","SKATE","SNAKE","VIPER",
+// "COBRA","GECKO","IGUANA","FROG","TOAD","NEWT","MINK","FERRET","SLOTH","TAPIR",
+// "OKAPI","HYRAX","AGOUTI","PRAWN","BEE","ANT","MOTH","GNAT","WASP","LORIS",
+// "PIKA","YAK","HARE","IBEX","ORCA","LOUSE","MIDGE","SKINK","ANURA"
+// ];
+
+const WORDS = [
+    "SPACE", "STAR", "MOON", "SUN", "COMET", "ORBIT", "ASTRO", "COSMO", "NOVA", "QUARK",
+    "PLUTO", "VENUS", "MARS", "EARTH", "SATURN", "URANU", "NEPTU", "SOLAR", "LUNAR", "GALAX",
+    "ROVER", "PROBE", "ATLAS", "APEX", "ION", "VOID", "SKY", "ALIEN", "RADAR", "LASER",
+    "APOLLO", "HUBBL", "SPICA", "VEGA", "RIGEL", "SIRIU", "ARIEL", "TITAN", "IO", "ERIS",
+    "CERES", "ORION", "LYRA", "DRACO", "CRUX", "ARIES", "LEO", "CYGNI", "AURAE", "NIX",
+    "PHOBE", "DEIMO", "METEO", "ECLIP", "FLARE", "BURST", "GAMMA", "DELTA", "OMEGA"
+];
+
+const generateUniqueCode = () => {
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const randomWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+    return `${randomNum}-${randomWord}`;
+};
+
 /**
  * Creates a new assignment in Firestore
  */
-export const createAssignment = async (assignment: Omit<Assignment, "id" | "createdAt">) => {
+export const createAssignment = async (assignment: Omit<Assignment, "id" | "createdAt" | "code">) => {
     const newAssignment = {
         ...assignment,
+        code: generateUniqueCode(),
         createdAt: Date.now(),
         status: "active" as const
     };
     const docRef = await addDoc(collection(db, ASSIGNMENTS_COLLECTION), newAssignment);
     return { id: docRef.id, ...newAssignment };
+};
+
+/**
+ * Fetches an assignment by its unique code
+ */
+export const getAssignmentByCode = async (code: string): Promise<Assignment | null> => {
+    const q = query(
+        collection(db, ASSIGNMENTS_COLLECTION),
+        where("code", "==", code.toUpperCase())
+    );
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) return null;
+    const doc = querySnapshot.docs[0];
+    return { id: doc.id, ...doc.data() } as Assignment;
 };
 
 /**

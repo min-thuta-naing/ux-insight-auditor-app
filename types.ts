@@ -63,6 +63,7 @@ export interface Assignment {
   id: string;
   professorId: string;
   title: string;
+  code: string;
   description: string;
   createdAt: number;
   status: 'active' | 'archived';

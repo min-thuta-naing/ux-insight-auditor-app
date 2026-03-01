@@ -127,12 +127,14 @@ export const AssignmentManagement: React.FC<AssignmentManagementProps> = ({ prof
                                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${asg.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                                     {asg.status}
                                 </span>
-                                <span className="text-[10px] text-slate-400 font-medium">{new Date(asg.createdAt).toLocaleDateString()}</span>
+                                <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md font-mono font-bold border border-indigo-100">
+                                    {asg.code}
+                                </span>
                             </div>
                             <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">{asg.title}</h3>
                             <p className="text-slate-500 text-sm line-clamp-2 mb-6 flex-1">{asg.description || 'No description provided.'}</p>
                             <button
-                                onClick={() => onSelectAssignment(asg.title)}
+                                onClick={() => onSelectAssignment(asg.id)}
                                 className="w-full py-2.5 bg-slate-50 text-slate-700 rounded-xl font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm group-hover:shadow-md"
                             >
                                 View Dashboard
@@ -149,12 +151,12 @@ export const AssignmentManagement: React.FC<AssignmentManagementProps> = ({ prof
                         <h2 className="text-2xl font-bold text-slate-900 mb-6">New Assignment</h2>
                         <form onSubmit={handleCreate} className="space-y-5">
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Title / Code</label>
+                                <label className="block text-sm font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Title</label>
                                 <input
                                     type="text"
                                     autoFocus
                                     required
-                                    placeholder="e.g., HW-01: Heuristic Evaluation"
+                                    placeholder="e.g., Heuristic Evaluation of E-commerce"
                                     value={newTitle}
                                     onChange={e => setNewTitle(e.target.value)}
                                     className="w-full border-slate-200 border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-400 font-medium"
@@ -169,6 +171,7 @@ export const AssignmentManagement: React.FC<AssignmentManagementProps> = ({ prof
                                     rows={3}
                                     className="w-full border-slate-200 border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-400 font-medium resize-none"
                                 />
+                                <p className="text-[10px] text-slate-400 mt-2 italic">* A unique assignment code will be automatically generated.</p>
                             </div>
                             <div className="flex gap-4 pt-2">
                                 <button

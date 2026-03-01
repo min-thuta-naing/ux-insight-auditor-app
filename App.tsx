@@ -13,7 +13,7 @@ import { Sidebar } from './components/Sidebar';
 import { AssignmentManagement } from './components/AssignmentManagement';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, PieChart, Pie, Legend } from 'recharts';
 import { User } from 'firebase/auth';
-import { getSubmissionsByAssignment, submitToFirestore } from './services/firestoreService';
+import { getSubmissionsByAssignment, submitToFirestore, getAssignmentByCode, getAssignmentById } from './services/firestoreService';
 
 // --- View Types ---
 type ViewState = 'LANDING' | 'STUDENT_ONBOARDING' | 'AUDITOR' | 'SUBMISSION_SUCCESS' | 'PROF_LOGIN' | 'PROF_DASHBOARD' | 'PROF_ASSIGNMENTS' | 'PROF_PROFILE' | 'RESET_PASSWORD';
@@ -37,7 +37,10 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [studentName, setStudentName] = useState("");
   const [studentId, setStudentId] = useState("");
-  const [assignmentId, setAssignmentId] = useState("HW-01");
+  const [assignmentCode, setAssignmentCode] = useState("");
+  const [assignmentId, setAssignmentId] = useState("");
+  const [assignmentTitle, setAssignmentTitle] = useState("");
+  const [professorId, setProfessorId] = useState("");
   const [lastSubmission, setLastSubmission] = useState<StudentSubmission | null>(null);
 
   // --- Auditor State (Shared) ---
@@ -71,13 +74,16 @@ const App: React.FC = () => {
 
   useEffect(() => {
     setSavedAudits(getSavedAudits());
-    if (currentView === 'PROF_DASHBOARD') {
+    if (currentView === 'PROF_DASHBOARD' && assignmentId) {
       const loadSubmissions = async () => {
-        if (assignmentId) {
-          const subs = await getSubmissionsByAssignment(assignmentId);
-          setSubmissions(subs);
-        } else {
-          setSubmissions(getProfessorSubmissions());
+        const subs = await getSubmissionsByAssignment(assignmentId);
+        setSubmissions(subs);
+
+        // Also fetch assignment details for display
+        const asg = await getAssignmentById(assignmentId);
+        if (asg) {
+          setAssignmentTitle(asg.title);
+          setAssignmentCode(asg.code);
         }
       };
       loadSubmissions();
@@ -196,7 +202,7 @@ const App: React.FC = () => {
         studentName,
         studentId,
         assignmentId,
-        professorId: "PROF_PLACEHOLDER", // This should be handled better if we know the prof ID
+        professorId,
         timestamp: Date.now(),
         auditData
       };
@@ -354,12 +360,44 @@ const App: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Assignment Code</label>
-              <input type="text" value={assignmentId} onChange={e => setAssignmentId(e.target.value)} className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
+              <input
+                type="text"
+                value={assignmentCode}
+                onChange={e => setAssignmentCode(e.target.value)}
+                className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none uppercase font-mono tracking-wider"
+                placeholder="e.g. 1234-STUDY"
+              />
             </div>
+            {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
             <div className="pt-4 flex flex-col gap-3">
               <div className="flex gap-3">
                 <button onClick={() => setCurrentView('LANDING')} className="flex-1 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Back</button>
-                <button onClick={() => { if (studentName) setCurrentView('AUDITOR'); }} disabled={!studentName} className={`flex-1 py-2 rounded-lg text-white font-medium ${!studentName ? 'bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'}`}>Start Auditing</button>
+                <button
+                  onClick={async () => {
+                    if (!studentName || !assignmentCode) return;
+                    setLoading(true);
+                    setError(null);
+                    try {
+                      const asg = await getAssignmentByCode(assignmentCode);
+                      if (asg) {
+                        setAssignmentId(asg.id);
+                        setAssignmentTitle(asg.title);
+                        setProfessorId(asg.professorId);
+                        setCurrentView('AUDITOR');
+                      } else {
+                        setError("Invalid or inactive assignment code.");
+                      }
+                    } catch (err) {
+                      setError("Failed to verify code.");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={!studentName || !assignmentCode || loading}
+                  className={`flex-1 py-2 rounded-lg text-white font-medium flex items-center justify-center gap-2 ${(!studentName || !assignmentCode || loading) ? 'bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                >
+                  {loading ? <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> : 'Start Auditing'}
+                </button>
               </div>
             </div>
           </div>
@@ -443,8 +481,8 @@ const App: React.FC = () => {
                   <div className="max-w-7xl mx-auto space-y-6">
                     <div className="flex justify-between items-center mb-4">
                       <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-bold text-slate-900">Assignment Overview</h1>
-                        <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wider">{assignmentId}</span>
+                        <h1 className="text-2xl font-bold text-slate-900">{assignmentTitle || 'Assignment Overview'}</h1>
+                        <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-mono font-bold border border-indigo-200 uppercase tracking-widest">{assignmentCode}</span>
                       </div>
                       <button onClick={handleExport} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -462,8 +500,8 @@ const App: React.FC = () => {
                         <div className={`text-4xl font-black mt-2 ${avgScore >= 70 ? 'text-green-600' : 'text-yellow-600'}`}>{avgScore}%</div>
                       </div>
                       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 className="text-slate-500 text-sm font-bold uppercase tracking-wider">Target Assignment</h3>
-                        <div className="text-4xl font-black text-indigo-600 mt-2 truncate">{assignmentId}</div>
+                        <h3 className="text-slate-500 text-sm font-bold uppercase tracking-wider">Assignment Code</h3>
+                        <div className="text-4xl font-mono font-black text-indigo-600 mt-2">{assignmentCode}</div>
                       </div>
                     </div>
 
