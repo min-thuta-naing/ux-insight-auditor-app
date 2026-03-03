@@ -86,3 +86,16 @@ export interface ClassStats {
   topFailedHeuristics: { name: string; count: number }[];
   submissions: StudentSubmission[];
 }
+
+export type InstitutionType = 'University' | 'Company' | 'Freelance' | 'Other';
+
+export interface ProfessorProfile {
+  uid: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  profession: string;
+  institutionType: InstitutionType;
+  institutionName: string;
+  updatedAt: number;
+}

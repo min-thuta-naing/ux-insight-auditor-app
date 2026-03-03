@@ -7,15 +7,18 @@ import {
     orderBy,
     doc,
     getDoc,
+    setDoc,
     Timestamp,
     updateDoc,
     deleteDoc
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { Assignment, StudentSubmission } from "../types";
+import { Assignment, StudentSubmission, ProfessorProfile } from "../types";
 
 const ASSIGNMENTS_COLLECTION = "assignments";
 const SUBMISSIONS_COLLECTION = "submissions";
+const PROFESSORS_COLLECTION = "professors";
+
 
 // const WORDS = ["STUDY", "AUDIT", "DESIGN", "USER", "PLAN", "HEURISTIC", "UX", "RESEARCH", "TEST", "CHECK", "REVIEW", "FLOW", "BEHAVIOR", "BELIEVE", "ALPHA", "BETA", ];
 // const WORDS = [
@@ -157,3 +160,29 @@ export const deleteAssignment = async (assignmentId: string) => {
     const docRef = doc(db, ASSIGNMENTS_COLLECTION, assignmentId);
     await deleteDoc(docRef);
 };
+
+/**
+ * Fetches a professor's profile by UID
+ */
+export const getProfessorProfile = async (uid: string): Promise<ProfessorProfile | null> => {
+    const docRef = doc(db, PROFESSORS_COLLECTION, uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return { uid: docSnap.id, ...docSnap.data() } as ProfessorProfile;
+    }
+    return null;
+};
+
+/**
+ * Updates or creates a professor's profile
+ */
+export const updateProfessorProfile = async (profile: ProfessorProfile) => {
+    const cleaned = cleanObject({
+        ...profile,
+        updatedAt: Date.now()
+    });
+    const docRef = doc(db, PROFESSORS_COLLECTION, profile.uid);
+    await setDoc(docRef, cleaned, { merge: true });
+    return cleaned;
+};
+
