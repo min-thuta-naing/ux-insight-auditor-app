@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import { HEURISTICS } from './constants';
 import { HeuristicDef, Persona, UsabilityReport, SavedAudit, AuditScope, WcagLevel, StudentSubmission } from './types';
 import { analyzeImage } from './services/geminiService';
@@ -32,6 +33,8 @@ const App: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     return params.get('oobCode');
   });
+
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   // --- Student Session State ---
   const [user, setUser] = useState<User | null>(null);
@@ -221,6 +224,31 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDownloadReceipt = async () => {
+    if (!receiptRef.current || !lastSubmission) return;
+
+    try {
+      setLoading(true);
+      const canvas = await html2canvas(receiptRef.current, {
+        scale: 2, // Higher quality
+        backgroundColor: "#ffffff",
+        logging: false,
+        useCORS: true
+      });
+
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `Audit_Receipt_${lastSubmission.refCode}.png`;
+      link.click();
+    } catch (err) {
+      console.error("Failed to generate image receipt:", err);
+      alert("Failed to generate image receipt. Please take a screenshot instead.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLoadSubmission = (sub: StudentSubmission) => {
     const audit = sub.auditData;
     setSelectedImage(audit.imageSrc);
@@ -290,10 +318,7 @@ const App: React.FC = () => {
               <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">UX</div>
               <h1 className="text-xl font-bold text-slate-800">Insight Auditor</h1>
             </div>
-            <div className="flex gap-4">
-              <button onClick={() => { setAuthMode('login'); setCurrentView('PROF_LOGIN'); }} className="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">Login</button>
-              <button onClick={() => { setAuthMode('signup'); setCurrentView('PROF_LOGIN'); }} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all shadow-sm">Sign Up</button>
-            </div>
+
           </div>
         </header>
         <div className="flex-1 flex flex-col justify-center items-center p-4">
@@ -409,22 +434,52 @@ const App: React.FC = () => {
   if (currentView === 'SUBMISSION_SUCCESS') {
     return (
       <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
-        <div className="bg-white p-10 rounded-2xl shadow-xl max-w-lg w-full text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10 text-center border border-slate-100">
+          <div className="mb-6 flex justify-center">
+            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center border-4 border-green-100/50">
+              <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+            </div>
           </div>
           <h2 className="text-3xl font-bold text-slate-900 mb-2">Submission Received!</h2>
-          <p className="text-slate-600 mb-8">Your audit has been successfully submitted to the class dashboard.</p>
+          <p className="text-slate-600 mb-6">Your audit has been successfully submitted to the class dashboard.</p>
 
-          <div className="bg-slate-100 p-6 rounded-xl border border-slate-200 mb-8">
-            <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Reference Code</p>
-            <p className="text-4xl font-mono font-bold text-indigo-600 tracking-wider">{lastSubmission?.refCode}</p>
-            <p className="text-xs text-slate-400 mt-2">Save this code as proof of submission</p>
+          <div ref={receiptRef} className="flex flex-col gap-4 mb-8 bg-white p-2">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex justify-between items-center text-left">
+              <div>
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Student Name</p>
+                <p className="text-slate-900 font-bold">{studentName}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Student ID</p>
+                <p className="text-slate-900 font-bold font-mono">{studentId || 'N/A'}</p>
+              </div>
+            </div>
+
+            <div className="bg-indigo-50/50 p-6 rounded-2xl border-2 border-dashed border-indigo-100 relative group">
+              <p className="text-xs text-indigo-400 uppercase tracking-widest font-black mb-1">Official Reference Code</p>
+              <p className="text-5xl font-mono font-black text-indigo-600 tracking-tighter">{lastSubmission?.refCode}</p>
+              <p className="text-[10px] text-slate-400 mt-3 italic">This code is your permanent proof of work.</p>
+            </div>
           </div>
 
-          <div className="flex gap-4">
-            <button onClick={() => { setReports([]); setSelectedImage(null); setCurrentView('LANDING'); }} className="flex-1 py-3 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-medium">Return Home</button>
-            <button onClick={() => { setReports([]); setSelectedImage(null); setCurrentView('AUDITOR'); }} className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">New Audit</button>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={handleDownloadReceipt}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold shadow-lg transition-all active:scale-95 disabled:opacity-70"
+            >
+              {loading ? (
+                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              )}
+              {loading ? 'Generating Receipt...' : 'Download PNG Receipt'}
+            </button>
+
+            <div className="flex gap-4">
+              <button onClick={() => { setReports([]); setSelectedImage(null); setCurrentView('LANDING'); }} className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors">Return Home</button>
+              <button onClick={() => { setReports([]); setSelectedImage(null); setCurrentView('AUDITOR'); }} className="flex-1 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 font-bold shadow-lg transition-transform active:scale-95">New Audit</button>
+            </div>
           </div>
         </div>
       </div>
@@ -635,12 +690,7 @@ const App: React.FC = () => {
             <h1 className="text-xl font-bold text-slate-800">Insight Auditor</h1>
           </div>
           <div className="flex items-center gap-4">
-            {!user && (
-              <div className="flex gap-4 border-r border-slate-200 pr-4 mr-2">
-                <button onClick={() => { setAuthMode('login'); setCurrentView('PROF_LOGIN'); }} className="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">Login</button>
-                <button onClick={() => { setAuthMode('signup'); setCurrentView('PROF_LOGIN'); }} className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">Sign Up</button>
-              </div>
-            )}
+
 
             <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
               <span className="text-xs font-bold uppercase tracking-wide">Student</span>

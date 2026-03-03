@@ -45,6 +45,23 @@ const generateUniqueCode = () => {
 };
 
 /**
+ * Recursively removes undefined values from an object to prevent Firestore errors
+ */
+const cleanObject = (obj: any): any => {
+    if (Array.isArray(obj)) {
+        return obj.map(cleanObject);
+    } else if (obj !== null && typeof obj === 'object') {
+        return Object.entries(obj).reduce((acc: any, [key, value]) => {
+            if (value !== undefined) {
+                acc[key] = cleanObject(value);
+            }
+            return acc;
+        }, {});
+    }
+    return obj;
+};
+
+/**
  * Creates a new assignment in Firestore
  */
 export const createAssignment = async (assignment: Omit<Assignment, "id" | "createdAt" | "code">) => {
@@ -54,8 +71,9 @@ export const createAssignment = async (assignment: Omit<Assignment, "id" | "crea
         createdAt: Date.now(),
         status: "active" as const
     };
-    const docRef = await addDoc(collection(db, ASSIGNMENTS_COLLECTION), newAssignment);
-    return { id: docRef.id, ...newAssignment };
+    const cleaned = cleanObject(newAssignment);
+    const docRef = await addDoc(collection(db, ASSIGNMENTS_COLLECTION), cleaned);
+    return { id: docRef.id, ...cleaned };
 };
 
 /**
@@ -103,14 +121,15 @@ export const getAssignmentById = async (assignmentId: string): Promise<Assignmen
 };
 
 /**
- * Submits a student's audit to Firestore
- */
+  * Submits a student's audit to Firestore
+  */
 export const submitToFirestore = async (submission: Omit<StudentSubmission, "id">) => {
-    const docRef = await addDoc(collection(db, SUBMISSIONS_COLLECTION), {
+    const data = cleanObject({
         ...submission,
         timestamp: Date.now()
     });
-    return { id: docRef.id, ...submission };
+    const docRef = await addDoc(collection(db, SUBMISSIONS_COLLECTION), data);
+    return { id: docRef.id, ...data };
 };
 
 /**

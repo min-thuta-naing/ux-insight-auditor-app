@@ -10,15 +10,15 @@ export const analyzeImage = async (
   scope: AuditScope = 'UX',
   wcagLevel: WcagLevel = 'AA'
 ): Promise<UsabilityReport> => {
-  
+
   // Simulate network latency
   await new Promise(resolve => setTimeout(resolve, 2000));
 
   const isInclusive = scope === 'Inclusive';
-  
+
   // Generate some random score to make it feel dynamic
   const baseScore = Math.floor(Math.random() * (95 - 65) + 65);
-  
+
   const mockFindings: Finding[] = [
     {
       id: `${heuristic.id}-1`,
@@ -47,34 +47,34 @@ export const analyzeImage = async (
   ];
 
   if (isInclusive) {
-      mockFindings.push({
-          id: "WCAG-1",
-          category: 'WCAG',
-          rule_id: "1.4.3",
-          element_name: "Body Text / Captions",
-          location_box: { ymin: 500, xmin: 100, ymax: 600, xmax: 900 },
-          issue_category: "Contrast",
-          issue_description: `Text contrast appears insufficient for WCAG 2.2 Level ${wcagLevel} standards.`,
-          severity: 'High',
-          reasoning: "Grey text on a white background often fails the required contrast ratio (4.5:1), making it difficult for visually impaired users.",
-          suggestion: "Darken the text color to #555555 or black to ensure readability."
-      });
+    mockFindings.push({
+      id: "WCAG-1",
+      category: 'WCAG',
+      rule_id: "1.4.3",
+      element_name: "Body Text / Captions",
+      location_box: { ymin: 500, xmin: 100, ymax: 600, xmax: 900 },
+      issue_category: "Contrast",
+      issue_description: `Text contrast appears insufficient for WCAG 2.2 Level ${wcagLevel} standards.`,
+      severity: 'High',
+      reasoning: "Grey text on a white background often fails the required contrast ratio (4.5:1), making it difficult for visually impaired users.",
+      suggestion: "Darken the text color to #555555 or black to ensure readability."
+    });
   }
 
   // Randomly generate a critical issue occasionally
   if (Math.random() > 0.7) {
-      mockFindings.push({
-          id: `${heuristic.id}-CRIT`,
-          category: 'UX',
-          rule_id: heuristic.id,
-          element_name: "System Feedback",
-          location_box: { ymin: 400, xmin: 400, ymax: 600, xmax: 600 },
-          issue_category: "Error Prevention",
-          issue_description: "Critical flow blocker detected. Users may not receive confirmation after an action.",
-          severity: 'Critical',
-          reasoning: "Lack of feedback leaves users guessing if their action was successful, leading to frustration or duplicate submissions.",
-          suggestion: "Add a clear success toast or modal confirmation immediately after the action."
-      });
+    mockFindings.push({
+      id: `${heuristic.id}-CRIT`,
+      category: 'UX',
+      rule_id: heuristic.id,
+      element_name: "System Feedback",
+      location_box: { ymin: 400, xmin: 400, ymax: 600, xmax: 600 },
+      issue_category: "Error Prevention",
+      issue_description: "Critical flow blocker detected. Users may not receive confirmation after an action.",
+      severity: 'Critical',
+      reasoning: "Lack of feedback leaves users guessing if their action was successful, leading to frustration or duplicate submissions.",
+      suggestion: "Add a clear success toast or modal confirmation immediately after the action."
+    });
   }
 
   return {
@@ -83,7 +83,7 @@ export const analyzeImage = async (
     heuristic_id: heuristic.id,
     heuristic_name: heuristic.name,
     overall_score: baseScore,
-    accessibility_score: isInclusive ? Math.floor(Math.random() * (90 - 50) + 50) : undefined,
+    ...(isInclusive ? { accessibility_score: Math.floor(Math.random() * (90 - 50) + 50) } : {}),
     violation_count: mockFindings.length,
     critical_issues: mockFindings.filter(f => f.severity === 'Critical' || f.severity === 'High').length,
     risk_level: baseScore > 80 ? 'Pass' : baseScore > 60 ? 'Warning' : 'Fail',
