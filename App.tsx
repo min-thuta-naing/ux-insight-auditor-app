@@ -26,9 +26,13 @@ const App: React.FC = () => {
     if (params.get('mode') === 'resetPassword' && params.get('oobCode')) {
       return 'RESET_PASSWORD';
     }
+    const savedView = localStorage.getItem('ux_auditor_view');
+    if (savedView) {
+      return savedView as ViewState;
+    }
     return 'LANDING';
   });
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>(() => (localStorage.getItem('ux_auth_mode') as 'login' | 'signup') || 'login');
   const [resetCode, setResetCode] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('oobCode');
@@ -38,23 +42,27 @@ const App: React.FC = () => {
 
   // --- Student Session State ---
   const [user, setUser] = useState<User | null>(null);
-  const [studentName, setStudentName] = useState("");
-  const [studentId, setStudentId] = useState("");
-  const [assignmentCode, setAssignmentCode] = useState("");
-  const [assignmentId, setAssignmentId] = useState("");
-  const [assignmentTitle, setAssignmentTitle] = useState("");
-  const [professorId, setProfessorId] = useState("");
+  const [authLoading, setAuthLoading] = useState(true);
+  const [studentName, setStudentName] = useState(() => localStorage.getItem('ux_student_name') || "");
+  const [studentId, setStudentId] = useState(() => localStorage.getItem('ux_student_id') || "");
+  const [assignmentCode, setAssignmentCode] = useState(() => localStorage.getItem('ux_assignment_code') || "");
+  const [assignmentId, setAssignmentId] = useState(() => localStorage.getItem('ux_assignment_id') || "");
+  const [assignmentTitle, setAssignmentTitle] = useState(() => localStorage.getItem('ux_assignment_title') || "");
+  const [professorId, setProfessorId] = useState(() => localStorage.getItem('ux_professor_id') || "");
   const [lastSubmission, setLastSubmission] = useState<StudentSubmission | null>(null);
 
   // --- Auditor State (Shared) ---
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [selectedHeuristic, setSelectedHeuristic] = useState<string>("H8");
-  const [selectedPersona, setSelectedPersona] = useState<Persona>("General Public");
-  const [auditScope, setAuditScope] = useState<AuditScope>('UX');
-  const [wcagLevel, setWcagLevel] = useState<WcagLevel>('AA');
+  const [selectedImage, setSelectedImage] = useState<string | null>(() => localStorage.getItem('ux_selected_image'));
+  const [selectedHeuristic, setSelectedHeuristic] = useState<string>(() => localStorage.getItem('ux_selected_heuristic') || "H8");
+  const [selectedPersona, setSelectedPersona] = useState<Persona>(() => (localStorage.getItem('ux_selected_persona') as Persona) || "General Public");
+  const [auditScope, setAuditScope] = useState<AuditScope>(() => (localStorage.getItem('ux_audit_scope') as AuditScope) || 'UX');
+  const [wcagLevel, setWcagLevel] = useState<WcagLevel>(() => (localStorage.getItem('ux_wcag_level') as WcagLevel) || 'AA');
   const [loading, setLoading] = useState<boolean>(false);
   const [progressMessage, setProgressMessage] = useState<string>("");
-  const [reports, setReports] = useState<UsabilityReport[]>([]);
+  const [reports, setReports] = useState<UsabilityReport[]>(() => {
+    const saved = localStorage.getItem('ux_reports');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [selectedFindingId, setSelectedFindingId] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [showUx, setShowUx] = useState(true);
@@ -64,16 +72,46 @@ const App: React.FC = () => {
 
   // --- Professor State ---
   const [submissions, setSubmissions] = useState<StudentSubmission[]>([]);
+  const [isPresentationOpen, setIsPresentationOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = subscribeToAuthChanges((currentUser) => {
       setUser(currentUser);
+      setAuthLoading(false);
       if (currentUser && currentView === 'PROF_LOGIN') {
         setCurrentView('PROF_DASHBOARD');
       }
     });
     return () => unsubscribe();
   }, [currentView]);
+
+  // Protection logic for authenticated views
+  useEffect(() => {
+    if (!authLoading && !user && currentView.startsWith('PROF_') && currentView !== 'PROF_LOGIN') {
+      setCurrentView('PROF_LOGIN');
+    }
+  }, [authLoading, user, currentView]);
+
+  // --- Persistence Sync ---
+  useEffect(() => {
+    if (currentView) {
+      localStorage.setItem('ux_auditor_view', currentView);
+    }
+    localStorage.setItem('ux_auth_mode', authMode);
+    localStorage.setItem('ux_student_name', studentName);
+    localStorage.setItem('ux_student_id', studentId);
+    localStorage.setItem('ux_assignment_code', assignmentCode);
+    localStorage.setItem('ux_assignment_id', assignmentId);
+    localStorage.setItem('ux_assignment_title', assignmentTitle);
+    localStorage.setItem('ux_professor_id', professorId);
+    if (selectedImage) localStorage.setItem('ux_selected_image', selectedImage);
+    else localStorage.removeItem('ux_selected_image');
+    localStorage.setItem('ux_selected_heuristic', selectedHeuristic);
+    localStorage.setItem('ux_selected_persona', selectedPersona);
+    localStorage.setItem('ux_audit_scope', auditScope);
+    localStorage.setItem('ux_wcag_level', wcagLevel);
+    localStorage.setItem('ux_reports', JSON.stringify(reports));
+  }, [currentView, studentName, studentId, assignmentCode, assignmentId, assignmentTitle, professorId, selectedImage, reports, selectedHeuristic, selectedPersona, auditScope, wcagLevel]);
 
   useEffect(() => {
     setSavedAudits(getSavedAudits());
@@ -555,7 +593,12 @@ const App: React.FC = () => {
                         <div className={`text-4xl font-black mt-2 ${avgScore >= 70 ? 'text-green-600' : 'text-yellow-600'}`}>{avgScore}%</div>
                       </div>
                       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 className="text-slate-500 text-sm font-bold uppercase tracking-wider">Assignment Code</h3>
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-slate-500 text-sm font-bold uppercase tracking-wider">Assignment Code</h3>
+                          <button onClick={() => setIsPresentationOpen(true)} className="text-indigo-600 hover:text-indigo-800 p-1 rounded-lg hover:bg-indigo-50 transition-colors" title="Display Fullscreen">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                          </button>
+                        </div>
                         <div className="text-4xl font-mono font-black text-indigo-600 mt-2">{assignmentCode}</div>
                       </div>
                     </div>
@@ -573,7 +616,8 @@ const App: React.FC = () => {
                           <thead className="bg-slate-50">
                             <tr>
                               <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Timestamp</th>
-                              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Student Info</th>
+                              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Student Name</th>
+                              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Student ID</th>
                               <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Ref Code</th>
                               <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Audit Score</th>
                               <th className="px-6 py-4 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest">Action</th>
@@ -590,7 +634,9 @@ const App: React.FC = () => {
                                     <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">{new Date(sub.timestamp).toLocaleString()}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                       <div className="text-sm font-bold text-slate-900">{sub.studentName}</div>
-                                      <div className="text-[10px] text-slate-400 font-mono tracking-tight">{sub.studentId || 'ID Not Provided'}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                      <div className="text-sm font-bold text-slate-900">{sub.studentId || 'ID Not Provided'}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 font-black font-mono tracking-wider">{sub.refCode}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -652,6 +698,33 @@ const App: React.FC = () => {
             </div>
           )}
         </main>
+
+        {/* Presentation Modal */}
+        {isPresentationOpen && (
+          <div className="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in duration-300">
+            <button
+              onClick={() => setIsPresentationOpen(false)}
+              className="absolute top-8 right-8 text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800 transition-all"
+            >
+              <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+
+            <div className="space-y-12 max-w-5xl">
+              <h2 className="text-slate-400 text-2xl font-bold uppercase tracking-[0.3em]">Join the Audit Session</h2>
+
+              <div className="space-y-4">
+                <p className="text-slate-500 text-xl font-bold">here is the assignment code</p>
+                <div className="text-[7rem] md:text-[9rem] font-mono font-black text-white tracking-tight leading-none">
+                  {assignmentCode}
+                </div>
+              </div>
+
+              <p className="text-white text-3xl font-bold max-w-2xl mx-auto">
+                please put the code in the audit session to continue
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

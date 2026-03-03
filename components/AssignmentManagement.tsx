@@ -171,7 +171,7 @@ export const AssignmentManagement: React.FC<AssignmentManagementProps> = ({ prof
                                     rows={3}
                                     className="w-full border-slate-200 border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-400 font-medium resize-none"
                                 />
-                                <p className="text-[10px] text-slate-400 mt-2 italic">* A unique assignment code will be automatically generated.</p>
+                                <p className="text-sm font-medium text-slate-600 mt-3">* A unique assignment code will be automatically generated.</p>
                             </div>
                             <div className="flex gap-4 pt-2">
                                 <button
