@@ -22,8 +22,8 @@ export const ProfessorLayout: React.FC<ProfessorLayoutProps> = ({
 
     const handleLogout = async () => {
         setIsLogoutConfirmOpen(false);
+        navigate('/'); // Navigate to landing page FIRST
         await firebaseLogout();
-        navigate('/');
     };
 
     return (
