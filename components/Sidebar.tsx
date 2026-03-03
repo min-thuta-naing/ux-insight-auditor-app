@@ -1,30 +1,29 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 
 interface SidebarProps {
-    currentView: string;
-    onNavigate: (view: any) => void;
     onLogout: () => void;
     userEmail?: string | null;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, userEmail }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onLogout, userEmail }) => {
     const menuItems = [
         {
-            id: 'PROF_DASHBOARD', label: 'Dashboard', icon: (
+            path: '/professor/dashboard', label: 'Dashboard', icon: (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
                 </svg>
             )
         },
         {
-            id: 'PROF_ASSIGNMENTS', label: 'Assignments', icon: (
+            path: '/professor/assignments', label: 'Assignments', icon: (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012-2" />
                 </svg>
             )
         },
         {
-            id: 'PROF_PROFILE', label: 'Profile', icon: (
+            path: '/professor/profile', label: 'Profile', icon: (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
@@ -41,17 +40,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLog
 
             <nav className="flex-1 px-4 space-y-2 mt-4">
                 {menuItems.map((item) => (
-                    <button
-                        key={item.id}
-                        onClick={() => onNavigate(item.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${currentView === item.id
+                    <NavLink
+                        key={item.path}
+                        to={item.path}
+                        className={({ isActive }) =>
+                            `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive
                                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20'
                                 : 'hover:bg-slate-800 hover:text-white'
-                            }`}
+                            }`
+                        }
                     >
                         {item.icon}
                         <span className="font-medium">{item.label}</span>
-                    </button>
+                    </NavLink>
                 ))}
             </nav>
 
