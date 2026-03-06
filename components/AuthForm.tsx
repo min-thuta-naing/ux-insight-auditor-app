@@ -52,11 +52,21 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
 
         try {
             if (mode === 'login') {
-                await signIn(email, password);
+                const userCredential = await signIn(email, password);
+                if (!userCredential.user.emailVerified) {
+                    // Don't sign out immediately, so the resend button works.
+                    // The ProtectedRoute will prevent them from accessing dashboard anyway.
+                    setError("Your email is not verified yet. Please check your inbox for the verification link.");
+                    setSuccessMessage(null);
+                    return;
+                }
                 onSuccess();
             } else if (mode === 'signup') {
                 await signUp(email, password);
-                onSuccess();
+                const { logout } = await import('../services/authService');
+                await logout();
+                setSuccessMessage("Account created! Please check your email to verify your account before logging in.");
+                setMode('login'); // Switch to login mode after signup
             } else {
                 await resetPassword(email);
                 setSuccessMessage("Password reset email sent! Please check your inbox.");
@@ -135,11 +145,47 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                     )}
 
                     {error && (
-                        <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600 flex items-start gap-2 animate-shake">
-                            <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span>{error}</span>
+                        <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600 flex flex-col gap-2 animate-shake">
+                            <div className="flex items-start gap-2">
+                                <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>{error}</span>
+                            </div>
+                            {(error.toLowerCase().includes("verify") || error.toLowerCase().includes("verification")) && (
+                                <div className="flex gap-4 items-center">
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            try {
+                                                setLoading(true);
+                                                const { sendVerificationEmail } = await import('../services/authService');
+                                                await sendVerificationEmail();
+                                                setSuccessMessage("Verification email resent!");
+                                                setError(null);
+                                            } catch (e: any) {
+                                                setError("Could not resend email: " + (e?.message || "unknown error"));
+                                            } finally {
+                                                setLoading(false);
+                                            }
+                                        }}
+                                        className="text-xs text-indigo-600 font-bold hover:underline mt-1"
+                                    >
+                                        Resend Verification Email
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            const { logout } = await import('../services/authService');
+                                            await logout();
+                                            window.location.reload();
+                                        }}
+                                        className="text-xs text-slate-500 font-bold hover:underline mt-1"
+                                    >
+                                        Sign Out
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
 

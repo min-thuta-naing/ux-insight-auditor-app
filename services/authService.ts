@@ -6,6 +6,8 @@ import {
     sendPasswordResetEmail,
     confirmPasswordReset,
     verifyPasswordResetCode,
+    sendEmailVerification,
+    applyActionCode,
     User
 } from "firebase/auth";
 import { auth } from "./firebase";
@@ -14,8 +16,23 @@ export const signIn = (email: string, password: string) => {
     return signInWithEmailAndPassword(auth, email, password);
 };
 
-export const signUp = (email: string, password: string) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+export const signUp = async (email: string, password: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    if (userCredential.user) {
+        await sendEmailVerification(userCredential.user);
+    }
+    return userCredential;
+};
+
+export const sendVerificationEmail = async () => {
+    if (auth.currentUser) {
+        return sendEmailVerification(auth.currentUser);
+    }
+    throw new Error("No user is currently signed in.");
+};
+
+export const verifyEmail = (code: string) => {
+    return applyActionCode(auth, code);
 };
 
 export const resetPassword = (email: string) => {

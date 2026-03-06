@@ -22,7 +22,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, loading, c
         );
     }
 
-    if (!user) {
+    if (!user || !user.emailVerified) {
         return <Navigate to="/professor/login" state={{ from: location }} replace />;
     }
 

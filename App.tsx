@@ -18,6 +18,7 @@ import { ProfessorProfilePage } from './pages/ProfessorProfilePage';
 import { ProfessorSubmissionDetailPage } from './pages/ProfessorSubmissionDetailPage';
 import { ProfessorLayout } from './pages/ProfessorLayout';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
+import { VerifyEmailPage } from './components/VerifyEmailPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 const App: React.FC = () => {
@@ -120,19 +121,34 @@ const App: React.FC = () => {
     navigate('/professor/submission');
   };
 
-  // Reset Password Logic
   const params = new URLSearchParams(location.search);
-  const resetCode = params.get('oobCode');
-  const isResetPath = params.get('mode') === 'resetPassword' && resetCode;
+  const oobCode = params.get('oobCode');
+  const mode = params.get('mode');
 
-  if (isResetPath) {
+  if (mode === 'resetPassword' && oobCode) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <ResetPasswordPage
-          oobCode={resetCode}
+          oobCode={oobCode}
           onSuccess={() => {
             window.history.replaceState({}, document.title, "/");
-            // Navigation would follow
+          }}
+          onBack={() => {
+            window.history.replaceState({}, document.title, "/");
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (mode === 'verifyEmail' && oobCode) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <VerifyEmailPage
+          oobCode={oobCode}
+          onSuccess={() => {
+            window.history.replaceState({}, document.title, "/");
+            navigate('/professor/login');
           }}
           onBack={() => {
             window.history.replaceState({}, document.title, "/");
