@@ -108,6 +108,7 @@ const App: React.FC = () => {
     setAuditScope(audit.auditScope || 'UX');
     setWcagLevel(audit.wcagLevel || 'AA');
     setIsHistoryOpen(false);
+    navigate('/student/auditor');
   };
 
   const handleDeleteAudit = (id: string) => {

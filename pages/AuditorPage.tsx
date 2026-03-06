@@ -202,6 +202,10 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
         setWcagLevel(audit.wcagLevel || 'AA');
         setIsHistoryOpen(false);
         setError(null);
+        // Reset filters to ensure findings are visible
+        setShowUx(true);
+        setShowWcag(true);
+        setShowAllIssues(true);
     };
 
     const handleDeleteAudit = (id: string) => {
