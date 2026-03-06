@@ -33,12 +33,12 @@ const PROFESSORS_COLLECTION = "professors";
 // ];
 
 const WORDS = [
-    "SPACE", "STAR", "MOON", "SUN", "COMET", "ORBIT", "ASTRO", "COSMO", "NOVA", "QUARK",
-    "PLUTO", "VENUS", "MARS", "EARTH", "SATURN", "URANU", "NEPTU", "SOLAR", "LUNAR", "GALAX",
-    "ROVER", "PROBE", "ATLAS", "APEX", "ION", "VOID", "SKY", "ALIEN", "RADAR", "LASER",
-    "APOLLO", "HUBBL", "SPICA", "VEGA", "RIGEL", "SIRIU", "ARIEL", "TITAN", "IO", "ERIS",
-    "CERES", "ORION", "LYRA", "DRACO", "CRUX", "ARIES", "LEO", "CYGNI", "AURAE", "NIX",
-    "PHOBE", "DEIMO", "METEO", "ECLIP", "FLARE", "BURST", "GAMMA", "DELTA", "OMEGA"
+    "RIVER", "OCEAN", "LAKE", "POND", "SHORE", "WAVE", "TIDE", "REEF",
+    "STONE", "ROCK", "CLIFF", "SAND", "DUNE", "CAVE", "PEAK", "RIDGE", "PLAIN", "FIELD",
+    "GRASS", "LEAF", "MOSS", "FERN", "BLOOM", "BUD", "SEED", "VINE", "ROOT", "BARK",
+    "FLORA", "FAUNA", "HERB", "TREE", "WOOD", "GROVE", "BRUSH", "WEED", "THORN",
+    "CLOUD", "STORM", "RAIN", "WIND", "MIST", "SNOW", "FROST",
+    "EMBER", "FLAME", "GLOW", "SPARK", "DUST", "SHADE", "LIGHT", "AUROR"
 ];
 
 const generateUniqueCode = () => {

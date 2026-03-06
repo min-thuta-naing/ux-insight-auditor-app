@@ -65,6 +65,19 @@ export const ProfessorSubmissionDetailPage: React.FC<ProfessorSubmissionDetailPa
 
     return (
         <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
+            {/* Navigation */}
+            <button
+                onClick={() => navigate('/professor/dashboard')}
+                className="group flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors font-bold text-[10px] uppercase tracking-widest"
+            >
+                <div className="p-2 bg-white rounded-xl border border-slate-200 group-hover:border-indigo-100 group-hover:bg-indigo-50 transition-all shadow-sm">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                </div>
+                Back to Dashboard
+            </button>
+
             {/* Student Header */}
             <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
                 <div className="flex flex-wrap justify-between items-start gap-6">
