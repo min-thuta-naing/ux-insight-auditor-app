@@ -96,13 +96,91 @@ export const ProfessorSubmissionDetailPage: React.FC<ProfessorSubmissionDetailPa
                 </div>
             </div>
 
-            {/* Audit Details */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Results Summary & Charts */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                    {/* Scores Section */}
+                    <div className="flex flex-col h-full">
+                        <div className="text-[11px] font-black text-slate-600 uppercase tracking-[0.2em] mb-6">Audit Performance</div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="text-center p-6 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col justify-center">
+                                <h4 className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">UX Score</h4>
+                                <div className={`text-4xl font-black ${avgUxScore >= 80 ? 'text-green-600' : avgUxScore >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                    {avgUxScore}<span className="text-sm text-slate-400 font-normal">/100</span>
+                                </div>
+                            </div>
+                            {auditScope === 'Inclusive' && avgAccessScore !== null && (
+                                <div className="text-center p-6 bg-violet-50 rounded-2xl border border-violet-100 flex flex-col justify-center">
+                                    <h4 className="text-[10px] font-bold text-violet-600 mb-2 uppercase tracking-wider">Access</h4>
+                                    <div className={`text-4xl font-black ${avgAccessScore >= 80 ? 'text-green-600' : avgAccessScore >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                        {avgAccessScore}<span className="text-sm text-slate-400 font-normal">/100</span>
+                                    </div>
+                                    <div className="text-[9px] font-bold text-violet-400 mt-2">WCAG {wcagLevel}</div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Severity Distribution */}
+                    <div className="lg:border-x lg:border-slate-100 lg:px-10 flex flex-col h-full">
+                        <div className="text-[11px] font-black text-slate-600 uppercase tracking-[0.2em] mb-6">Severity Distribution</div>
+                        <div className="flex-1 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={severityData} layout="vertical" margin={{ top: 0, right: 30, left: 10, bottom: 0 }}>
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" width={50} tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                    <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ fontSize: '11px', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                    <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={12}>
+                                        {severityData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Score by Heuristic */}
+                    <div className="flex flex-col h-full">
+                        <div className="text-[11px] font-black text-slate-600 uppercase tracking-[0.2em] mb-6">Score by Heuristic</div>
+                        <div className="flex-1 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={scoreBreakdownData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis
+                                        dataKey="name"
+                                        tick={{ fontSize: 9, fontWeight: 700, fill: '#64748b' }}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        interval={0}
+                                    />
+                                    <YAxis domain={[0, 100]} hide />
+                                    <Tooltip cursor={{ fill: '#f8fafc' }} content={({ active, payload, label }) => {
+                                        if (active && payload && payload.length) {
+                                            return (
+                                                <div className="bg-white p-3 border border-slate-100 shadow-xl rounded-xl text-[10px]">
+                                                    <p className="font-bold text-slate-900 mb-1">{label}: {payload[0].payload.full_name}</p>
+                                                    <p className="text-indigo-600 font-bold">Score: {payload[0].value}</p>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }} />
+                                    <Bar dataKey="score" fill="#6366f1" radius={[3, 3, 0, 0]} barSize={20} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Layout Grid: Image and Detailed Findings Side-by-Side */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 {/* Visual Analysis */}
-                <div className="lg:col-span-7 space-y-4">
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-lg font-bold text-slate-800">Visual Analysis</h2>
+                <div className="lg:col-span-7 sticky top-8">
+                    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                            <h2 className="text-xl font-normal text-slate-800">Visual Analysis</h2>
                             <div className="flex gap-4">
                                 <label className="inline-flex items-center cursor-pointer">
                                     <input type="checkbox" checked={showAllIssues} onChange={e => setShowAllIssues(e.target.checked)} className="sr-only peer" />
@@ -113,94 +191,37 @@ export const ProfessorSubmissionDetailPage: React.FC<ProfessorSubmissionDetailPa
                                 <label className="inline-flex items-center cursor-pointer">
                                     <input type="checkbox" checked={showUx} onChange={e => setShowUx(e.target.checked)} className="sr-only peer" />
                                     <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                                    <span className="ms-2 text-[10px] font-bold text-gray-700 uppercase tracking-tight">UX Issues</span>
+                                    <span className="ms-2 text-[10px] font-bold text-gray-700 uppercase tracking-tight">UX</span>
                                 </label>
                                 {auditScope === 'Inclusive' && (
                                     <label className="inline-flex items-center cursor-pointer">
                                         <input type="checkbox" checked={showWcag} onChange={e => setShowWcag(e.target.checked)} className="sr-only peer" />
                                         <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
-                                        <span className="ms-2 text-[10px] font-bold text-gray-700 uppercase tracking-tight">WCAG Issues</span>
+                                        <span className="ms-2 text-[10px] font-bold text-gray-700 uppercase tracking-tight">WCAG</span>
                                     </label>
                                 )}
                             </div>
                         </div>
-
-                        <ImageViewer
-                            imageSrc={imageSrc}
-                            findings={visibleFindings}
-                            selectedFindingId={selectedFindingId}
-                            onSelectFinding={handleSelectFinding}
-                        />
+                        <div className="p-4 bg-slate-50">
+                            <ImageViewer
+                                imageSrc={imageSrc}
+                                findings={visibleFindings}
+                                selectedFindingId={selectedFindingId}
+                                onSelectFinding={handleSelectFinding}
+                            />
+                        </div>
                     </div>
                 </div>
 
-                {/* Report and Findings */}
+                {/* Detailed Findings */}
                 <div className="lg:col-span-5 space-y-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="text-center p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                <h4 className="text-sm font-semibold text-slate-500 mb-1">UX Score</h4>
-                                <div className={`text-3xl font-bold ${avgUxScore >= 80 ? 'text-green-600' : avgUxScore >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                    {avgUxScore}<span className="text-sm text-slate-400 font-normal">/100</span>
-                                </div>
-                            </div>
-                            {auditScope === 'Inclusive' && avgAccessScore !== null && (
-                                <div className="text-center p-4 bg-violet-50 rounded-lg border border-violet-100">
-                                    <h4 className="text-sm font-semibold text-violet-600 mb-1">Accessibility</h4>
-                                    <div className={`text-3xl font-bold ${avgAccessScore >= 80 ? 'text-green-600' : avgAccessScore >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                        {avgAccessScore}<span className="text-sm text-slate-400 font-normal">/100</span>
-                                    </div>
-                                    <div className="text-[10px] text-violet-400 mt-1">WCAG 2.2 Level {wcagLevel}</div>
-                                </div>
-                            )}
+                    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-xl font-normal text-slate-900 tracking-tight">Detailed Findings</h3>
+                            <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-full uppercase tracking-widest">
+                                {visibleFindings.length} Total
+                            </span>
                         </div>
-
-                        <div className="space-y-6">
-                            <div className="h-32 w-full">
-                                <div className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Severity Distribution</div>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={severityData} layout="vertical" margin={{ top: 0, right: 30, left: 10, bottom: 0 }}>
-                                        <XAxis type="number" hide />
-                                        <YAxis dataKey="name" type="category" width={50} tick={{ fontSize: 11 }} interval={0} />
-                                        <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ fontSize: '12px' }} />
-                                        <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={16}>
-                                            {severityData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-
-                            {reports.length > 1 && (
-                                <div className="h-48 w-full border-t border-slate-100 pt-4">
-                                    <div className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Score by Heuristic</div>
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={scoreBreakdownData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} />
-                                            <YAxis domain={[0, 100]} hide />
-                                            <Tooltip cursor={{ fill: '#f1f5f9' }} content={({ active, payload, label }) => {
-                                                if (active && payload && payload.length) {
-                                                    return (
-                                                        <div className="bg-white p-2 border border-slate-200 shadow-lg rounded text-xs">
-                                                            <p className="font-bold">{label}: {payload[0].payload.full_name}</p>
-                                                            <p className="text-indigo-600">Score: {payload[0].value}</p>
-                                                        </div>
-                                                    );
-                                                }
-                                                return null;
-                                            }} />
-                                            <Bar dataKey="score" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Detailed Findings</h3>
                         <FindingsList findings={visibleFindings} onSelectFinding={handleSelectFinding} selectedFindingId={selectedFindingId} />
                     </div>
                 </div>
