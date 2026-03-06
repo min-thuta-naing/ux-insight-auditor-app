@@ -15,7 +15,7 @@ View your app in AI Studio: https://ai.studio/apps/229c8cca-e7bd-408f-bd28-c1748
 BEFORE THIS 
 create .env.local file in the root directory
 ```
-VITE_GEMINI_API_KEY=AIzaSyDhPgMpok1WXxcJtj9t3Ibx8byAFTGqEXc
+VITE_GEMINI_API_KEY=
 VITE_FIREBASE_API_KEY=AIzaSyDJAkGS__riu4GmI_HUBWKHhfjwU6yu0KY
 VITE_FIREBASE_AUTH_DOMAIN=ux-insight-auditor.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=ux-insight-auditor
