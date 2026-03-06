@@ -357,19 +357,19 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                                         <label className="inline-flex items-center cursor-pointer">
                                             <input type="checkbox" checked={showAllIssues} onChange={e => setShowAllIssues(e.target.checked)} className="sr-only peer" />
                                             <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
-                                            <span className="ms-2 text-[10px] font-bold text-gray-700 uppercase tracking-tighter">Show All Issues</span>
+                                            <span className="ms-2 text-[10px] font-bold text-gray-700 uppercase tracking-tight">Show All Issues</span>
                                         </label>
                                         <div className="w-[1px] h-4 bg-gray-200 mx-1 self-center"></div>
                                         <label className="inline-flex items-center cursor-pointer">
                                             <input type="checkbox" checked={showUx} onChange={e => setShowUx(e.target.checked)} className="sr-only peer" />
                                             <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                                            <span className="ms-2 text-xs font-medium text-gray-700">UX Issues</span>
+                                            <span className="ms-2 text-[10px] font-bold text-gray-700 uppercase tracking-tight">UX Issues</span>
                                         </label>
                                         {auditScope === 'Inclusive' && (
                                             <label className="inline-flex items-center cursor-pointer">
                                                 <input type="checkbox" checked={showWcag} onChange={e => setShowWcag(e.target.checked)} className="sr-only peer" />
                                                 <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
-                                                <span className="ms-2 text-xs font-medium text-gray-700">WCAG Issues</span>
+                                                <span className="ms-2 text-[10px] font-bold text-gray-700 uppercase tracking-tight">WCAG Issues</span>
                                             </label>
                                         )}
                                     </div>
