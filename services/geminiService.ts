@@ -1,7 +1,10 @@
+import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 import { HeuristicDef, Persona, UsabilityReport, AuditScope, WcagLevel, Finding } from "../types";
 
-// Mock Service - Replaces the actual Google Gemini API integration
-// This ensures the application remains functional for demonstration purposes without requiring an API key.
+// Initialize Gemini API
+// Note: In a production app, you should use a backend to proxy these requests to keep your API key secure.
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 export const analyzeImage = async (
   base64Image: string,
@@ -10,84 +13,108 @@ export const analyzeImage = async (
   scope: AuditScope = 'UX',
   wcagLevel: WcagLevel = 'AA'
 ): Promise<UsabilityReport> => {
+  if (!API_KEY) {
+    throw new Error("Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your .env.local file.");
+  }
 
-  // Simulate network latency
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  const model = genAI.getGenerativeModel({
+    model: "gemini-flash-latest",
+    generationConfig: {
+      responseMimeType: "application/json",
+    }
+  });
 
   const isInclusive = scope === 'Inclusive';
 
-  // Generate some random score to make it feel dynamic
-  const baseScore = Math.floor(Math.random() * (95 - 65) + 65);
+  const prompt = `
+    You are a world-class UX Auditor and Accessibility Expert. 
+    Perform a professional UX audit on the attached website screenshot.
+    
+    TARGET PERSONA: ${persona}
+    SPECIFIC HEURISTIC TO AUDIT: ${heuristic.id} - ${heuristic.name}
+    HEURISTIC DEFINITION: ${heuristic.definition}
+    AUDIT FOCUS: ${heuristic.instruction}
+    
+    ${isInclusive ? `ACCESSIBILITY SCOPE: Include WCAG 2.2 Level ${wcagLevel} audit findings.` : 'SCOPE: UX ONLY. Do not include any WCAG or accessibility-related findings.'}
 
-  const mockFindings: Finding[] = [
+    INSTRUCTIONS:
+    1. Analyze the image carefully based on the specified heuristic and persona.
+    2. Identify specific UI elements that violate the heuristic${isInclusive ? ' or accessibility standards' : ''}.
+    3. For each issue, provide:
+       - element_name: Name of the UI component.
+       - location_box: [ymin, xmin, ymax, xmax] - normalized coordinates (0-1000) surrounding the element.
+       - issue_category: Short category (e.g., "Visibility", "Contrast", "Navigation").
+       - issue_description: Clear description of what is wrong.
+       - severity: "Critical", "High", "Medium", or "Low".
+       - reasoning: Why this is an issue for the ${persona}.
+       - suggestion: How to fix it.
+    4. Calculate an overall UX score (0-100) for the page relative to this heuristic.
+    ${isInclusive ? '5. Calculate an accessibility score (0-100).' : ''}
+    6. Provide a concise executive summary.
+
+    RESPONSE FORMAT:
+    The response MUST be a JSON object following this interface:
     {
-      id: `${heuristic.id}-1`,
-      category: 'UX',
-      rule_id: heuristic.id,
-      element_name: "Primary Action Button",
-      location_box: { ymin: 300, xmin: 300, ymax: 450, xmax: 700 },
-      issue_category: "Visibility",
-      issue_description: `Potential visibility issue detected relevant to ${heuristic.name}. The element hierarchy might be unclear for ${persona}.`,
-      severity: 'Medium',
-      reasoning: "The visual weight of the button competes with secondary elements, potentially causing confusion.",
-      suggestion: "Increase the contrast of the primary button or reduce the prominence of surrounding elements."
-    },
-    {
-      id: `${heuristic.id}-2`,
-      category: 'UX',
-      rule_id: heuristic.id,
-      element_name: "Navigation Menu",
-      location_box: { ymin: 20, xmin: 20, ymax: 80, xmax: 980 },
-      issue_category: "Consistency",
-      issue_description: "Navigation items may not align with standard patterns expected by users.",
-      severity: 'Low',
-      reasoning: "Users typically expect the logo on the far left and profile actions on the far right. The current spacing is irregular.",
-      suggestion: "Align navigation items using a standard grid system to improve scanability."
+      "overall_score": number,
+      "accessibility_score"?: number,
+      "violation_count": number,
+      "executive_summary": string,
+      "findings": [
+        {
+          "category": "UX" | "WCAG",
+          "rule_id": string (the heuristic ID or WCAG criteria ID),
+          "element_name": string,
+          "location_box": { "ymin": number, "xmin": number, "ymax": number, "xmax": number },
+          "issue_category": string,
+          "issue_description": string,
+          "severity": "Critical" | "High" | "Medium" | "Low",
+          "reasoning": string,
+          "suggestion": string
+        }
+      ]
     }
-  ];
+  `;
 
-  if (isInclusive) {
-    mockFindings.push({
-      id: "WCAG-1",
-      category: 'WCAG',
-      rule_id: "1.4.3",
-      element_name: "Body Text / Captions",
-      location_box: { ymin: 500, xmin: 100, ymax: 600, xmax: 900 },
-      issue_category: "Contrast",
-      issue_description: `Text contrast appears insufficient for WCAG 2.2 Level ${wcagLevel} standards.`,
-      severity: 'High',
-      reasoning: "Grey text on a white background often fails the required contrast ratio (4.5:1), making it difficult for visually impaired users.",
-      suggestion: "Darken the text color to #555555 or black to ensure readability."
-    });
+  try {
+    const imagePart: Part = {
+      inlineData: {
+        data: base64Image,
+        mimeType: "image/png" // Assuming PNG, but Gemini handles most formats
+      }
+    };
+
+    const result = await model.generateContent([prompt, imagePart]);
+    const responseText = result.response.text();
+    const parsedData = JSON.parse(responseText);
+
+    const rawFindings = parsedData.findings || [];
+    const filteredFindings = isInclusive
+      ? rawFindings
+      : rawFindings.filter((f: any) => f.category !== 'WCAG');
+
+    const findingsWithIds = filteredFindings.map((f: any, index: number) => ({
+      ...f,
+      id: `${heuristic.id}-${index + 1}`
+    }));
+
+    const criticalIssues = findingsWithIds.filter((f: any) => f.severity === 'Critical' || f.severity === 'High').length;
+    const baseScore = parsedData.overall_score || 0;
+
+    return {
+      audit_id: `gemini-${Date.now()}`,
+      audit_timestamp: new Date().toISOString(),
+      heuristic_id: heuristic.id,
+      heuristic_name: heuristic.name,
+      overall_score: baseScore,
+      accessibility_score: parsedData.accessibility_score,
+      violation_count: findingsWithIds.length,
+      critical_issues: criticalIssues,
+      risk_level: baseScore > 80 ? 'Pass' : baseScore > 60 ? 'Warning' : 'Fail',
+      executive_summary: parsedData.executive_summary,
+      findings: findingsWithIds
+    };
+  } catch (error) {
+    console.error("Gemini Analysis Error:", error);
+    throw new Error(error instanceof Error ? error.message : "Failed to analyze image with Gemini");
   }
-
-  // Randomly generate a critical issue occasionally
-  if (Math.random() > 0.7) {
-    mockFindings.push({
-      id: `${heuristic.id}-CRIT`,
-      category: 'UX',
-      rule_id: heuristic.id,
-      element_name: "System Feedback",
-      location_box: { ymin: 400, xmin: 400, ymax: 600, xmax: 600 },
-      issue_category: "Error Prevention",
-      issue_description: "Critical flow blocker detected. Users may not receive confirmation after an action.",
-      severity: 'Critical',
-      reasoning: "Lack of feedback leaves users guessing if their action was successful, leading to frustration or duplicate submissions.",
-      suggestion: "Add a clear success toast or modal confirmation immediately after the action."
-    });
-  }
-
-  return {
-    audit_id: `mock-${Date.now()}`,
-    audit_timestamp: new Date().toISOString(),
-    heuristic_id: heuristic.id,
-    heuristic_name: heuristic.name,
-    overall_score: baseScore,
-    ...(isInclusive ? { accessibility_score: Math.floor(Math.random() * (90 - 50) + 50) } : {}),
-    violation_count: mockFindings.length,
-    critical_issues: mockFindings.filter(f => f.severity === 'Critical' || f.severity === 'High').length,
-    risk_level: baseScore > 80 ? 'Pass' : baseScore > 60 ? 'Warning' : 'Fail',
-    executive_summary: "SIMULATION MODE: The AI analysis API has been removed. This is a generated mock report for demonstration purposes. In a real environment, this would call the Gemini API to analyze the uploaded image.",
-    findings: mockFindings
-  };
 };

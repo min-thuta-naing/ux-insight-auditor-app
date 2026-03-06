@@ -57,6 +57,7 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [showUx, setShowUx] = useState(true);
     const [showWcag, setShowWcag] = useState(true);
+    const [showAllIssues, setShowAllIssues] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [savedAudits, setSavedAudits] = useState<SavedAudit[]>([]);
 
@@ -86,6 +87,7 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
         setProgressMessage("");
         setShowUx(true);
         setShowWcag(true);
+        setShowAllIssues(false); // Reset to default when running new audit
 
         try {
             const base64Data = selectedImage.split(',')[1];
@@ -208,11 +210,16 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
         }
     };
 
+    const handleSelectFinding = (id: string) => {
+        setSelectedFindingId(prev => prev === id ? undefined : id);
+    };
+
     // --- Helper Data ---
     const allFindings = reports.flatMap(r => r.findings);
     const visibleFindings = allFindings.filter(f => {
-        if (f.category === 'WCAG') return showWcag;
-        return showUx;
+        const matchesScope = f.category === 'WCAG' ? showWcag : showUx;
+        const matchesSeverity = showAllIssues || f.severity === 'High' || f.severity === 'Critical';
+        return matchesScope && matchesSeverity;
     });
 
     const avgUxScore = reports.length > 0
@@ -348,6 +355,12 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                                     <h2 className="text-lg font-semibold text-slate-800">Visual Analysis {reports.length > 0 && `(${visibleFindings.length} issues)`}</h2>
                                     <div className="flex gap-4">
                                         <label className="inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" checked={showAllIssues} onChange={e => setShowAllIssues(e.target.checked)} className="sr-only peer" />
+                                            <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                                            <span className="ms-2 text-[10px] font-bold text-gray-700 uppercase tracking-tighter">Show All Issues</span>
+                                        </label>
+                                        <div className="w-[1px] h-4 bg-gray-200 mx-1 self-center"></div>
+                                        <label className="inline-flex items-center cursor-pointer">
                                             <input type="checkbox" checked={showUx} onChange={e => setShowUx(e.target.checked)} className="sr-only peer" />
                                             <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
                                             <span className="ms-2 text-xs font-medium text-gray-700">UX Issues</span>
@@ -366,7 +379,7 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                                     imageSrc={selectedImage}
                                     findings={visibleFindings}
                                     selectedFindingId={selectedFindingId}
-                                    onSelectFinding={setSelectedFindingId}
+                                    onSelectFinding={handleSelectFinding}
                                 />
 
                                 <div className="mt-3 flex gap-4 justify-center text-xs text-slate-500">
@@ -460,7 +473,7 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex-1">
                                 <h3 className="text-lg font-bold text-slate-800 mb-4">Detailed Findings</h3>
                                 {reports.length > 0 ? (
-                                    <FindingsList findings={visibleFindings} onSelectFinding={setSelectedFindingId} selectedFindingId={selectedFindingId} />
+                                    <FindingsList findings={visibleFindings} onSelectFinding={handleSelectFinding} selectedFindingId={selectedFindingId} />
                                 ) : (
                                     <div className="text-center py-10 text-slate-400 border-2 border-dashed border-slate-200 rounded-lg">
                                         {loading ? (
