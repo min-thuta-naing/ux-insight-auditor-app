@@ -12,8 +12,13 @@ interface ProfessorSubmissionDetailPageProps {
 export const ProfessorSubmissionDetailPage: React.FC<ProfessorSubmissionDetailPageProps> = ({ submission }) => {
     const navigate = useNavigate();
     const [selectedFindingId, setSelectedFindingId] = useState<string | undefined>(undefined);
+
+    const handleSelectFinding = (id: string) => {
+        setSelectedFindingId(prev => prev === id ? undefined : id);
+    };
     const [showUx, setShowUx] = useState(true);
     const [showWcag, setShowWcag] = useState(true);
+    const [showAllIssues, setShowAllIssues] = useState(false);
 
     if (!submission) {
         return (
@@ -31,8 +36,9 @@ export const ProfessorSubmissionDetailPage: React.FC<ProfessorSubmissionDetailPa
 
     const allFindings = reports.flatMap(r => r.findings);
     const visibleFindings = allFindings.filter(f => {
-        if (f.category === 'WCAG') return showWcag;
-        return showUx;
+        const matchesScope = f.category === 'WCAG' ? showWcag : showUx;
+        const matchesSeverity = showAllIssues || f.severity === 'High' || f.severity === 'Critical';
+        return matchesScope && matchesSeverity;
     });
 
     const avgUxScore = reports.length > 0
@@ -99,15 +105,21 @@ export const ProfessorSubmissionDetailPage: React.FC<ProfessorSubmissionDetailPa
                             <h2 className="text-lg font-bold text-slate-800">Visual Analysis</h2>
                             <div className="flex gap-4">
                                 <label className="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" checked={showAllIssues} onChange={e => setShowAllIssues(e.target.checked)} className="sr-only peer" />
+                                    <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                                    <span className="ms-2 text-[10px] font-bold text-gray-700 uppercase tracking-tight">Show All Issues</span>
+                                </label>
+                                <div className="w-[1px] h-4 bg-gray-200 mx-1 self-center"></div>
+                                <label className="inline-flex items-center cursor-pointer">
                                     <input type="checkbox" checked={showUx} onChange={e => setShowUx(e.target.checked)} className="sr-only peer" />
                                     <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                                    <span className="ms-2 text-xs font-medium text-gray-700">UX Issues</span>
+                                    <span className="ms-2 text-[10px] font-bold text-gray-700 uppercase tracking-tight">UX Issues</span>
                                 </label>
                                 {auditScope === 'Inclusive' && (
                                     <label className="inline-flex items-center cursor-pointer">
                                         <input type="checkbox" checked={showWcag} onChange={e => setShowWcag(e.target.checked)} className="sr-only peer" />
                                         <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
-                                        <span className="ms-2 text-xs font-medium text-gray-700">WCAG Issues</span>
+                                        <span className="ms-2 text-[10px] font-bold text-gray-700 uppercase tracking-tight">WCAG Issues</span>
                                     </label>
                                 )}
                             </div>
@@ -117,7 +129,7 @@ export const ProfessorSubmissionDetailPage: React.FC<ProfessorSubmissionDetailPa
                             imageSrc={imageSrc}
                             findings={visibleFindings}
                             selectedFindingId={selectedFindingId}
-                            onSelectFinding={setSelectedFindingId}
+                            onSelectFinding={handleSelectFinding}
                         />
                     </div>
                 </div>
@@ -189,7 +201,7 @@ export const ProfessorSubmissionDetailPage: React.FC<ProfessorSubmissionDetailPa
 
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                         <h3 className="text-lg font-bold text-slate-800 mb-4">Detailed Findings</h3>
-                        <FindingsList findings={visibleFindings} onSelectFinding={setSelectedFindingId} selectedFindingId={selectedFindingId} />
+                        <FindingsList findings={visibleFindings} onSelectFinding={handleSelectFinding} selectedFindingId={selectedFindingId} />
                     </div>
                 </div>
             </div>
