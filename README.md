@@ -15,14 +15,6 @@ View your app in AI Studio: https://ai.studio/apps/229c8cca-e7bd-408f-bd28-c1748
 BEFORE THIS 
 create .env.local file in the root directory
 ```
-VITE_GEMINI_API_KEY=
-VITE_FIREBASE_API_KEY=AIzaSyDJAkGS__riu4GmI_HUBWKHhfjwU6yu0KY
-VITE_FIREBASE_AUTH_DOMAIN=ux-insight-auditor.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=ux-insight-auditor
-VITE_FIREBASE_STORAGE_BUCKET=ux-insight-auditor.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID=337371263483
-VITE_FIREBASE_APP_ID=1:337371263483:web:0d283846b93f3b0d579b5e
-VITE_FIREBASE_MEASUREMENT_ID=G-5L6XKDCY7D
 ```
 1. Install dependencies:
    `npm install`
