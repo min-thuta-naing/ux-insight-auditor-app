@@ -22,3 +22,18 @@ create .env.local file in the root directory
 3. Run the app:
    `npm run dev`
 
+------
+
+testings 
+1. k6 static load test (passed ✅)
+   `k6 run load-test.js` (run it in the root directory)
+2. database stress test (passed ✅)  
+   ```
+   1.1 Open your website in Chrome/Edge and log in.
+   1.2 Run ONE audit manually (upload an image and click "Run Audit"). This ensures there is data ready to be submitted.
+   1.3 Open the Console: Press F12 (or Cmd+Option+J on Mac) and click the Console tab.
+   1.4 Copy and Paste: Copy the entire code from db-stress-test.js into the console and press Enter.
+   1.5 Start the test: Type the following in the console and press Enter:
+   runSubmissionTest(200);
+   ```
+
