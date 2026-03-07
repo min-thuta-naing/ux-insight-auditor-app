@@ -5,6 +5,7 @@ import { HeuristicDef, Persona, UsabilityReport, SavedAudit, AuditScope, WcagLev
 import { analyzeImage } from '../services/geminiService';
 import { saveAudit, getSavedAudits, deleteAudit } from '../services/storageService';
 import { submitToFirestore } from '../services/firestoreService';
+import { uploadImageToCloudinary } from '../services/cloudinaryService';
 import { FindingsList } from '../components/FindingsList';
 import { ImageViewer } from '../components/ImageViewer';
 import { HistoryModal } from '../components/HistoryModal';
@@ -170,6 +171,16 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
             const randomSuffix = Math.floor(1000 + Math.random() * 9000);
             const refCode = `UX-${randomSuffix}`;
 
+            // Upload to Cloudinary first
+            setProgressMessage("Uploading image to Cloudinary...");
+            const imageUrl = await uploadImageToCloudinary(selectedImage);
+            setProgressMessage("Submitting to database...");
+
+            const auditDataWithUrl: SavedAudit = {
+                ...auditData,
+                imageSrc: imageUrl
+            };
+
             const submission = {
                 refCode,
                 studentName,
@@ -177,7 +188,7 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                 assignmentId,
                 professorId,
                 timestamp: Date.now(),
-                auditData
+                auditData: auditDataWithUrl
             };
 
             const savedSubmission = await submitToFirestore(submission);
