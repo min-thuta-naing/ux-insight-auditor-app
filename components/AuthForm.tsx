@@ -15,6 +15,29 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+    // Password requirements state
+    const [passwordRequirements, setPasswordRequirements] = useState({
+        length: false,
+        lowercase: false,
+        uppercase: false,
+        number: false,
+        special: false
+    });
+
+    const validatePassword = (pass: string) => {
+        const requirements = {
+            length: pass.length >= 6,
+            lowercase: /[a-z]/.test(pass),
+            uppercase: /[A-Z]/.test(pass),
+            number: /[0-9]/.test(pass),
+            special: /[!@#$%^&*(),.?":{}|<>]/.test(pass)
+        };
+        setPasswordRequirements(requirements);
+        return Object.values(requirements).every(Boolean);
+    };
+
+    const isPasswordValid = Object.values(passwordRequirements).every(Boolean);
+
     const getFriendlyErrorMessage = (err: any) => {
         const code = err?.code || "";
         switch (code) {
@@ -54,14 +77,17 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
             if (mode === 'login') {
                 const userCredential = await signIn(email, password);
                 if (!userCredential.user.emailVerified) {
-                    // Don't sign out immediately, so the resend button works.
-                    // The ProtectedRoute will prevent them from accessing dashboard anyway.
                     setError("Your email is not verified yet. Please check your inbox for the verification link.");
                     setSuccessMessage(null);
                     return;
                 }
                 onSuccess();
             } else if (mode === 'signup') {
+                if (!isPasswordValid) {
+                    setError("Please meet all password requirements.");
+                    setLoading(false);
+                    return;
+                }
                 await signUp(email, password);
                 const { logout } = await import('../services/authService');
                 await logout();
@@ -136,11 +162,48 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                                     type="password"
                                     required
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        if (mode === 'signup') validatePassword(e.target.value);
+                                    }}
+                                    className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl outline-none transition-all ${mode === 'signup' && password.length > 0 && !isPasswordValid
+                                        ? 'border-red-400 focus:ring-2 focus:ring-red-500'
+                                        : 'border-slate-200 focus:ring-2 focus:ring-indigo-500'
+                                        }`}
                                     placeholder="••••••••"
                                 />
                             </div>
+
+                            {mode === 'signup' && (
+                                <div className="mt-4 space-y-3 animate-fadeIn">
+                                    <p className={`text-sm font-medium transition-colors ${!isPasswordValid && password.length > 0 ? 'text-red-800' : 'text-slate-600'}`}>
+                                        Please create a password that meets all requirements below
+                                    </p>
+
+                                    <div className="space-y-2 ml-1">
+                                        <RequirementItem
+                                            met={passwordRequirements.length}
+                                            text="At least 6 characters"
+                                        />
+                                        <RequirementItem
+                                            met={passwordRequirements.lowercase}
+                                            text="1 lowercase letter"
+                                        />
+                                        <RequirementItem
+                                            met={passwordRequirements.uppercase}
+                                            text="1 uppercase letter"
+                                        />
+                                        <RequirementItem
+                                            met={passwordRequirements.number}
+                                            text="1 number"
+                                        />
+                                        <RequirementItem
+                                            met={passwordRequirements.special}
+                                            text="1 special character"
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -213,7 +276,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                                 {mode === 'reset' ? 'Sending...' : 'Authenticating...'}
                             </span>
                         ) : (
-                            mode === 'login' ? "Sign In" : mode === 'signup' ? "Get Started" : "Send Reset Link"
+                            mode === 'login' ? "Sign In" : mode === 'signup' ? (isPasswordValid ? "Get Started" : "Check Requirements") : "Send Reset Link"
                         )}
                     </button>
                 </form>
@@ -250,3 +313,22 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
         </div>
     );
 };
+
+const RequirementItem: React.FC<{ met: boolean; text: string }> = ({ met, text }) => (
+    <div className="flex items-center gap-3 group">
+        <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ${met ? 'bg-emerald-600' : 'bg-slate-300'}`}>
+            {met ? (
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+            ) : (
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            )}
+        </div>
+        <span className={`text-sm font-medium transition-colors duration-300 ${met ? 'text-emerald-700' : 'text-slate-500'}`}>
+            {text}
+        </span>
+    </div>
+);
