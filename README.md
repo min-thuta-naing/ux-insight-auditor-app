@@ -37,3 +37,8 @@ testings
    runSubmissionTest(200);
    ```
 
+-----
+deployment
+after every changes, run the following command to deploy  
+1. deployment command
+   `npm run deploy` (run it in the root directory)
