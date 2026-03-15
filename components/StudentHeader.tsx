@@ -20,49 +20,68 @@ export const StudentHeader: React.FC<StudentHeaderProps> = ({
     const navigate = useNavigate();
 
     return (
-        <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        /* HEADER COLOR: You can change the background color below (e.g., bg-white) */
+        <header className="bg-[#F9F8F6] sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-                    <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">UX</div>
-                    <h1 className="text-xl font-bold text-slate-800">Insight Auditor</h1>
+                    {/* <div className="w-8 h-8 bg-indigo-600 rounded-md flex items-center justify-center text-white font-bold">UX</div> */}
+                    <h1 className="text-2xl font-bold text-slate-800">UX Insight Auditor</h1>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     {studentName || user ? (
-                        <div className="flex items-center gap-2">
-                            <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-student-50 text-student-600 rounded-full border border-student-200">
-                                <span className="text-xs font-bold uppercase tracking-wide">Student</span>
-                                <span className="text-sm font-medium">{studentName || user?.displayName || 'Student'}</span>
+                        <div className="flex items-center gap-3">
+                            <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-700 rounded-full border border-[#8C5A3C] shadow-sm">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-[#030303]/50">Student</span>
+                                <span className="text-sm font-bold border-l border-[#8C5A3C]/70 pl-2">{studentName || user?.displayName || 'Student'}</span>
                             </div>
+
+                            {/* History Button (Green) */}
+                            <button 
+                                onClick={onOpenHistory}
+                                className="group flex items-center h-10 px-3 bg-[#D0E7D2] text-[#618264] rounded-full border border-[#618264]/50 hover:[#618264] transition-all duration-300 ease-out overflow-hidden shadow-sm"
+                                title="View History"
+                            >
+                                <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-xs group-hover:opacity-100 group-hover:ml-2 transition-all duration-300 ease-out font-bold text-sm">
+                                    History ({historyCount})
+                                </span>
+                            </button>
+
+                            {/* Profile Button (Blue) */}
                             <button
                                 onClick={() => navigate('/student/profile')}
-                                className="p-2 bg-student-100 text-student-700 rounded-xl border border-student-200 hover:bg-student-200 transition-all shadow-sm group"
+                                className="group flex items-center h-10 px-3 bg-[#DAEAF1] text-[#6096B4] rounded-full border border-[#6096B4]/50 hover:[#6096B4] transition-all duration-300 ease-out overflow-hidden shadow-sm"
                                 title="View Profile"
                             >
-                                <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
+                                <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-xs group-hover:opacity-100 group-hover:ml-2 transition-all duration-300 ease-out font-bold text-sm">
+                                    Profile
+                                </span>
                             </button>
+
+                            {/* Logout Button (Red) */}
                             <button
                                 onClick={onOpenLogout}
-                                className="p-2 bg-red-50 text-red-600 rounded-xl border border-red-100 hover:bg-red-100 transition-all shadow-sm group ml-1"
+                                className="group flex items-center h-10 px-3 bg-[#F6ECF0] text-[#AF3E3E] rounded-full border border-[#AF3E3E]/50 hover:[#AF3E3E] transition-all duration-300 ease-out overflow-hidden shadow-sm"
                                 title="Logout"
                             >
-                                <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                 </svg>
+                                <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-xs group-hover:opacity-100 group-hover:ml-2 transition-all duration-300 ease-out font-bold text-sm">
+                                    Log out
+                                </span>
                             </button>
                         </div>
                     ) : (
-                        <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-slate-100 text-slate-500 rounded-full border border-slate-200">
-                            <span className="text-xs font-bold uppercase tracking-wide">Guest</span>
+                        <div className="px-4 py-2 bg-slate-100 text-slate-500 rounded-full border border-[#D4C9BE] font-bold text-xs uppercase tracking-widest">
+                            Guest
                         </div>
                     )}
-                    <button onClick={onOpenHistory} className="text-sm font-medium text-slate-600 hover:text-student-500 flex items-center gap-1 transition-colors">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        My History ({historyCount})
-                    </button>
                 </div>
             </div>
         </header>

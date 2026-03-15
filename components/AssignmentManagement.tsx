@@ -43,7 +43,7 @@ export const AssignmentManagement: React.FC<AssignmentManagementProps> = ({ prof
                 title: newTitle,
                 description: newDesc,
                 status: 'active'
-            });
+            } as any);
             setShowModal(false);
             setNewTitle("");
             setNewDesc("");

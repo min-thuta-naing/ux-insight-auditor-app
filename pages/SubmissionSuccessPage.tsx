@@ -82,10 +82,23 @@ export const SubmissionSuccessPage: React.FC<SubmissionSuccessPageProps> = ({
                     </div>
 
                     <div className="bg-student-50 p-6 rounded-2xl border-2 border-dashed border-student-200 relative group">
-                        <p className="text-xs text-student-400 uppercase tracking-widest font-black mb-1">Official Reference Code</p>
-                        <p className="text-5xl font-mono font-black text-student-500 tracking-tighter">{lastSubmission?.refCode}</p>
-                        <p className="text-[10px] text-slate-400 mt-3 italic">This code is your permanent proof of work.</p>
+                        <p className="text-[10px] text-student-400 uppercase tracking-widest font-black mb-1">Receipt ID (Reference Code)</p>
+                        <p className="text-3xl font-mono font-black text-student-500 tracking-tighter">{lastSubmission?.refCode}</p>
+                        <p className="text-[10px] text-slate-400 mt-2 italic">This code is your permanent proof of work.</p>
                     </div>
+
+                    {lastSubmission?.sessionCode && (
+                        <div className="bg-indigo-600 p-6 rounded-2xl shadow-xl shadow-indigo-200 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-1 bg-indigo-500 rounded-bl-lg">
+                                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                            </div>
+                            <p className="text-[10px] text-indigo-200 uppercase tracking-[0.2em] font-black mb-2 flex items-center justify-center gap-2">
+                                <span>Next Round Key</span>
+                            </p>
+                            <p className="text-4xl font-mono font-black text-white tracking-[0.1em]">{lastSubmission.sessionCode}</p>
+                            <p className="text-[10px] text-indigo-100 mt-3 font-medium">Use this code to unlock Round {lastSubmission.roundNumber + 1}.</p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex flex-col gap-3">

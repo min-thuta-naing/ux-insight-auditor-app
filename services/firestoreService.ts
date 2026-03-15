@@ -10,7 +10,8 @@ import {
     setDoc,
     Timestamp,
     updateDoc,
-    deleteDoc
+    deleteDoc,
+    limit
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { Assignment, StudentSubmission, ProfessorProfile, StudentProfile, SavedAudit } from "../types";
@@ -40,13 +41,22 @@ const WORDS = [
     "GRASS", "LEAF", "MOSS", "FERN", "BLOOM", "BUD", "SEED", "VINE", "ROOT", "BARK",
     "FLORA", "FAUNA", "HERB", "TREE", "WOOD", "GROVE", "BRUSH", "WEED", "THORN",
     "CLOUD", "STORM", "RAIN", "WIND", "MIST", "SNOW", "FROST",
-    "EMBER", "FLAME", "GLOW", "SPARK", "DUST", "SHADE", "LIGHT", "AUROR"
+    "EMBER", "FLAME", "GLOW", "SPARK", "DUST", "SHADE", "LIGHT", "AURORA"
 ];
 
 const generateUniqueCode = () => {
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const randomWord = WORDS[Math.floor(Math.random() * WORDS.length)];
     return `${randomNum}-${randomWord}`;
+};
+
+const generateSessionCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
 };
 
 /**
@@ -74,7 +84,11 @@ export const createAssignment = async (assignment: Omit<Assignment, "id" | "crea
         ...assignment,
         code: generateUniqueCode(),
         createdAt: Date.now(),
-        status: "active" as const
+        status: "active" as const,
+        roundsCount: 1,
+        currentRound: 1,
+        roundStatus: "open" as const,
+        roundStatuses: { "1": "open" as const }
     };
     const cleaned = cleanObject(newAssignment);
     const docRef = await addDoc(collection(db, ASSIGNMENTS_COLLECTION), cleaned);
@@ -85,9 +99,19 @@ export const createAssignment = async (assignment: Omit<Assignment, "id" | "crea
  * Fetches an assignment by its unique code
  */
 export const getAssignmentByCode = async (code: string): Promise<Assignment | null> => {
+    let normalized = code.trim().toUpperCase();
+    
+    // Help students who confuse zero '0' with letter 'O' in the word part
+    if (normalized.includes('-')) {
+        const [numPart, wordPart] = normalized.split('-');
+        if (wordPart) {
+            normalized = `${numPart}-${wordPart.replace(/0/g, 'O')}`;
+        }
+    }
+
     const q = query(
         collection(db, ASSIGNMENTS_COLLECTION),
-        where("code", "==", code.toUpperCase())
+        where("code", "==", normalized)
     );
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) return null;
@@ -153,6 +177,49 @@ export const getSubmissionsByAssignment = async (assignmentId: string): Promise<
 
     // Sort in-memory to avoid composite index requirement
     return data.sort((a, b) => b.timestamp - a.timestamp);
+};
+
+/**
+ * Updates the round status of an assignment
+ */
+export const updateRoundStatus = async (assignmentId: string, roundNumber: number, status: 'open' | 'closed') => {
+    const docRef = doc(db, ASSIGNMENTS_COLLECTION, assignmentId);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return;
+    
+    const data = docSnap.data() as Assignment;
+    const statuses = data.roundStatuses || {};
+    statuses[roundNumber.toString()] = status;
+    
+    const updates: any = { roundStatuses: statuses };
+    
+    // For backward compatibility and convenience if it's the latest round
+    if (roundNumber === data.roundsCount) {
+        updates.roundStatus = status;
+    }
+    
+    await updateDoc(docRef, updates);
+};
+
+/**
+ * Adds a new round to an assignment and sets it as the current active round
+ */
+export const addNewRound = async (assignmentId: string) => {
+    const docRef = doc(db, ASSIGNMENTS_COLLECTION, assignmentId);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return;
+    
+    const data = docSnap.data() as Assignment;
+    const nextRound = (data.roundsCount || 1) + 1;
+    const statuses = data.roundStatuses || {};
+    statuses[nextRound.toString()] = "open";
+    
+    await updateDoc(docRef, {
+        roundsCount: nextRound,
+        currentRound: nextRound,
+        roundStatus: "open",
+        roundStatuses: statuses
+    });
 };
 
 /**
@@ -269,5 +336,15 @@ export const getSubmissionsByStudent = async (studentUid: string): Promise<Stude
         id: doc.id,
         ...doc.data()
     } as StudentSubmission)).sort((a, b) => b.timestamp - a.timestamp);
+};
+
+/**
+ * Fetches the most recent submission for a student in a specific assignment
+ */
+export const getLatestSubmission = async (studentUid: string, assignmentId: string): Promise<StudentSubmission | null> => {
+    const submissions = await getSubmissionsByStudent(studentUid);
+    // Find the newest submission for this specific assignment
+    // Since getSubmissionsByStudent already sorts by timestamp desc, we just find the first match
+    return submissions.find(s => s.assignmentId === assignmentId) || null;
 };
 

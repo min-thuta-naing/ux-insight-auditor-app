@@ -38,17 +38,22 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
+  const latestType = toasts.length > 0 ? toasts[toasts.length - 1].type : null;
+
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {toasts.length > 0 && (
-        <div className="fixed inset-0 z-[199] bg-gradient-to-b from-black/40 to-transparent pointer-events-none transition-opacity duration-300 animate-in fade-in" />
+        <div className={`fixed inset-0 z-[199] bg-gradient-to-b to-transparent pointer-events-none transition-colors duration-500 animate-in fade-in ${
+          latestType === 'error' ? 'from-[#FFCDC9]/60' : 
+          latestType === 'success' ? 'from-[#C7EABB]/60' : 'from-black/40'
+        }`} />
       )}
       <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto w-full bg-white rounded-2xl shadow-2xl border-l-4 p-4 flex items-start gap-4 animate-in slide-in-from-top-10 duration-500 ease-out ${
+            className={`pointer-events-auto w-full bg-white rounded-2xl shadow-2xl border-l-4 border-b-4 border-r-4 p-4 flex items-start gap-4 animate-in slide-in-from-top-10 duration-500 ease-out ${
               toast.type === 'success' ? 'border-green-500' : 
               toast.type === 'error' ? 'border-red-500' : 'border-student-500'
             }`}

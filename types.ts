@@ -81,6 +81,10 @@ export interface Assignment {
   description: string;
   createdAt: number;
   status: 'active' | 'archived';
+  roundsCount: number; // Total number of rounds created
+  currentRound: number; // The latest round number
+  roundStatus: 'open' | 'closed'; // Status of the currentRound
+  roundStatuses?: { [roundNumber: string]: 'open' | 'closed' }; // Status for each round
 }
 
 export interface StudentSubmission {
@@ -95,6 +99,8 @@ export interface StudentSubmission {
   auditData: SavedAudit;
   violationCounts?: ViolationCounts;
   severityCounts?: SeverityCounts;
+  roundNumber: number; // Current round being submitted
+  sessionCode: string; // The session code generated for/by this submission
 }
 
 export interface ClassStats {

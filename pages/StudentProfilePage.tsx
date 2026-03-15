@@ -90,7 +90,7 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ user }) 
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => navigate(-1)}
-                            className="p-2 bg-white text-slate-600 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all shadow-sm group"
+                            className="p-2 bg-white text-slate-600 rounded-lg border border-[#D4C9BE] hover:bg-slate-50 transition-all shadow-sm group"
                             title="Go Back"
                         >
                             <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -101,7 +101,7 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ user }) 
                     </div>
                 </div>
 
-                <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+                <div className="bg-white rounded-2xl border-2 border-[#D4C9BE] p-8 shadow-sm">
                     <div className="flex items-center gap-6 mb-10">
                         <div className="w-20 h-20 bg-student-500 rounded-2xl flex items-center justify-center text-3xl text-white font-bold">
                             {initials}
@@ -125,7 +125,7 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ user }) 
                                         type="text"
                                         value={firstName}
                                         onChange={e => setFirstName(e.target.value)}
-                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-student-500 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-slate-50 border border-[#D4C9BE] rounded-xl focus:ring-2 focus:ring-student-500 outline-none transition-all"
                                         placeholder="John"
                                     />
                                 </div>
@@ -135,7 +135,7 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ user }) 
                                         type="text"
                                         value={lastName}
                                         onChange={e => setLastName(e.target.value)}
-                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-student-500 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-slate-50 border border-[#D4C9BE] rounded-xl focus:ring-2 focus:ring-student-500 outline-none transition-all"
                                         placeholder="Doe"
                                     />
                                 </div>
@@ -147,7 +147,7 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ user }) 
                                     type="text"
                                     value={studentId}
                                     onChange={e => setStudentId(e.target.value)}
-                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-student-500 outline-none transition-all"
+                                    className="w-full px-4 py-3 bg-slate-50 border border-[#D4C9BE] rounded-xl focus:ring-2 focus:ring-student-500 outline-none transition-all"
                                     placeholder="65XXXXXXXX"
                                 />
                             </div>
@@ -158,7 +158,7 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ user }) 
                                     type="text"
                                     value={institutionName}
                                     onChange={e => setInstitutionName(e.target.value)}
-                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-student-500 outline-none transition-all"
+                                    className="w-full px-4 py-3 bg-slate-50 border border-[#D4C9BE] rounded-xl focus:ring-2 focus:ring-student-500 outline-none transition-all"
                                     placeholder="e.g. Stanford University"
                                 />
                             </div>
@@ -168,7 +168,7 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ user }) 
                                     <button
                                         onClick={() => setIsEditing(false)}
                                         disabled={saving}
-                                        className="flex-1 py-3 px-6 bg-slate-50 text-slate-600 font-bold rounded-2xl hover:bg-slate-100 transition-all border border-slate-100 disabled:opacity-50"
+                                        className="flex-1 py-3 px-6 bg-white text-slate-600 font-bold rounded-2xl hover:bg-slate-50 transition-all border border-[#D4C9BE] disabled:opacity-50"
                                     >
                                         Cancel
                                     </button>
@@ -192,13 +192,13 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ user }) 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-1.5">First Name</label>
-                                    <div className="bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 text-slate-700 font-medium">
+                                    <div className="bg-slate-50 px-4 py-3 rounded-xl border border-[#D4C9BE] text-slate-700 font-medium">
                                         {profile?.firstName || <span className="text-slate-400 italic">Not provided</span>}
                                     </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-1.5">Last Name</label>
-                                    <div className="bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 text-slate-700 font-medium">
+                                    <div className="bg-slate-50 px-4 py-3 rounded-xl border border-[#D4C9BE] text-slate-700 font-medium">
                                         {profile?.lastName || <span className="text-slate-400 italic">Not provided</span>}
                                     </div>
                                 </div>
@@ -206,14 +206,14 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ user }) 
 
                             <div>
                                 <label className="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-1.5">Student ID</label>
-                                <div className="bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 text-slate-700 font-medium">
+                                <div className="bg-slate-50 px-4 py-3 rounded-xl border border-[#D4C9BE] text-slate-700 font-medium">
                                     {profile?.studentId || <span className="text-slate-400 italic">Not provided</span>}
                                 </div>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-1.5">Institution Name</label>
-                                <div className="bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 text-slate-700 font-medium">
+                                <div className="bg-slate-50 px-4 py-3 rounded-xl border border-[#D4C9BE] text-slate-700 font-medium">
                                     {profile?.institutionName || <span className="text-slate-400 italic">Not provided</span>}
                                 </div>
                             </div>
@@ -221,7 +221,7 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ user }) 
                             <div className="pt-4 flex gap-4">
                                 <button
                                     onClick={() => setIsEditing(true)}
-                                    className="flex-1 py-3 px-6 bg-white text-slate-600 font-bold rounded-2xl hover:bg-slate-100 transition-all border border-slate-100"
+                                    className="flex-1 py-3 px-6 bg-white text-slate-600 font-bold rounded-2xl hover:bg-slate-50 transition-all border border-[#D4C9BE]"
                                 >
                                     Edit Profile
                                 </button>

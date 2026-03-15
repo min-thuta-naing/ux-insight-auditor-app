@@ -10,7 +10,9 @@ import {
     saveDraft, 
     getDrafts, 
     deleteDraft, 
-    getSubmissionsByStudent 
+    getSubmissionsByStudent,
+    getAssignmentById,
+    getLatestSubmission
 } from '../services/firestoreService';
 import { useToast } from '../components/Toast';
 import { uploadImageToCloudinary } from '../services/cloudinaryService';
@@ -78,6 +80,10 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
     const [savedAudits, setSavedAudits] = useState<SavedAudit[]>([]);
     const [submissionHistory, setSubmissionHistory] = useState<StudentSubmission[]>([]);
     const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+    const [roundNumber, setRoundNumber] = useState(1);
+    const [roundsCount, setRoundsCount] = useState(1);
+    const [assignmentStatus, setAssignmentStatus] = useState<'open' | 'closed'>('open');
+    const [profCurrentRound, setProfCurrentRound] = useState(1);
 
     const { assignmentId: urlAssignmentId } = useParams<{ assignmentId: string }>();
 
@@ -92,12 +98,14 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
             if (assignmentId === urlAssignmentId) return;
 
             try {
-                const { getAssignmentById } = await import('../services/firestoreService');
                 const asg = await getAssignmentById(urlAssignmentId);
                 if (asg) {
                     setAssignmentId(asg.id);
                     setAssignmentTitle(asg.title);
                     setProfessorId(asg.professorId);
+                    setRoundsCount(asg.roundsCount || 1);
+                    setAssignmentStatus(asg.roundStatus || 'open');
+                    setProfCurrentRound(asg.currentRound || 1);
                 } else {
                     navigate('/student/join');
                 }
@@ -108,7 +116,33 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
         };
 
         checkAssignment();
-    }, [assignmentId, urlAssignmentId, navigate, setAssignmentId, setAssignmentTitle, setProfessorId]);
+    }, [urlAssignmentId, navigate, setAssignmentId, setAssignmentTitle, setProfessorId]);
+
+    useEffect(() => {
+        const detectRound = async () => {
+            if (user && assignmentId) {
+                try {
+                    const asg = await getAssignmentById(assignmentId);
+                    if (asg) {
+                        setRoundsCount(asg.roundsCount || 1);
+                        setProfCurrentRound(asg.currentRound || 1);
+                        
+                        const latest = await getLatestSubmission(user.uid, assignmentId);
+                        const detected = latest ? latest.roundNumber + 1 : 1;
+                        setRoundNumber(detected);
+                        
+                        // Set status based on specific round number
+                        const specificStatus = (asg.roundStatuses && asg.roundStatuses[detected.toString()]) || 
+                                             (detected === asg.currentRound ? asg.roundStatus : 'closed');
+                        setAssignmentStatus(specificStatus);
+                    }
+                } catch (err) {
+                    console.error("Failed to detect round:", err);
+                }
+            }
+        };
+        detectRound();
+    }, [user, assignmentId]);
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -240,6 +274,17 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
 
     const handleSubmitAssignment = async () => {
         if (!selectedImage || reports.length === 0) return;
+        
+        if (assignmentStatus === 'closed') {
+            showToast("Submissions Closed", "error", `Round ${roundNumber} is currently closed by the instructor.`);
+            return;
+        }
+
+        if (roundNumber > profCurrentRound) {
+            showToast("Wait for Next Round", "info", `The instructor hasn't started Round ${roundNumber} yet.`);
+            return;
+        }
+
         setLoading(true);
         try {
             const { violationCounts, severityCounts } = calculateAnalytics();
@@ -260,6 +305,12 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
 
             const randomSuffix = Math.floor(1000 + Math.random() * 9000);
             const refCode = `UX-${randomSuffix}`;
+
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let sessionCode = '';
+            for (let i = 0; i < 6; i++) {
+                sessionCode += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
 
             // Upload to Cloudinary first
             setProgressMessage("Uploading image to Cloudinary...");
@@ -282,7 +333,9 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                 timestamp: Date.now(),
                 auditData: auditDataWithUrl,
                 violationCounts,
-                severityCounts
+                severityCounts,
+                roundNumber,
+                sessionCode
             };
 
             const savedSubmission = await submitToFirestore(submission);
@@ -394,6 +447,8 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                 submissions={submissionHistory}
                 onLoad={handleLoadAudit}
                 onDelete={handleDeleteAudit}
+                studentName={studentName}
+                studentId={studentId}
             />
 
             <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
@@ -453,6 +508,26 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                                 ) : 'Run Audit'}
                             </button>
                         </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between text-[11px] font-bold uppercase tracking-widest">
+                        <div className="flex items-center gap-2">
+                            <span className={`${roundNumber > profCurrentRound ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-student-100 text-student-700 border-student-200'} px-2 py-0.5 rounded-md border text-[10px]`}>
+                                {roundNumber > profCurrentRound ? `Waiting for Round ${roundNumber}` : `Round ${roundNumber} of ${roundsCount}`}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-slate-400">Round Status:</span>
+                            <span className={`${assignmentStatus === 'open' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'} px-2 py-0.5 rounded-md border text-[10px]`}>
+                                {assignmentStatus.toUpperCase()}
+                            </span>
+                        </div>
+                        {roundNumber > 1 && (
+                            <div className="text-green-600 flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                Session Verified
+                            </div>
+                        )}
                     </div>
 
                     {loading && selectedHeuristic === "ALL" && (
