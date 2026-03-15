@@ -55,6 +55,7 @@ export interface SavedAudit {
   persona: Persona;
   auditScope: AuditScope;
   wcagLevel: WcagLevel;
+  assignmentId: string;
 }
 
 // --- New Types for Platform Features ---
@@ -73,7 +74,8 @@ export interface StudentSubmission {
   id?: string; // Firestore ID
   refCode: string; // UX-XXXX format
   studentName: string;
-  studentId: string; // Optional
+  studentId: string; // University ID
+  studentUid: string; // Firebase Auth UID for history
   assignmentId: string;
   professorId: string;
   timestamp: number;
@@ -97,5 +99,15 @@ export interface ProfessorProfile {
   profession: string;
   institutionType: InstitutionType;
   institutionName: string;
+  updatedAt: number;
+}
+
+export interface StudentProfile {
+  uid: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  studentId?: string; // The university ID
+  institutionName?: string;
   updatedAt: number;
 }

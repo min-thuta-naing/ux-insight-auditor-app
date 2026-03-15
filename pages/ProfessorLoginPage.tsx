@@ -12,9 +12,10 @@ export const ProfessorLoginPage: React.FC<ProfessorLoginPageProps> = ({ authMode
     return (
         <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
             <AuthForm
-                onSuccess={() => navigate('/professor/dashboard')}
-                onBack={() => navigate('/')}
+                onSuccess={() => navigate('/instructor-auth-research-2026/portal/dashboard')}
+                onBack={() => navigate('/instructor-auth-research-2026')}
                 initialMode={authMode}
+                role="professor"
             />
         </div>
     );

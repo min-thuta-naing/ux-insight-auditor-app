@@ -24,7 +24,7 @@ export const ProfessorSubmissionDetailPage: React.FC<ProfessorSubmissionDetailPa
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-500">
                 <p className="text-xl font-medium mb-4">No submission selected</p>
-                <button onClick={() => navigate('/professor/dashboard')} className="text-indigo-600 hover:underline font-bold">
+                <button onClick={() => navigate('/instructor-auth-research-2026/portal/dashboard')} className="text-indigo-600 hover:underline font-bold">
                     Back to Dashboard
                 </button>
             </div>
@@ -67,7 +67,7 @@ export const ProfessorSubmissionDetailPage: React.FC<ProfessorSubmissionDetailPa
         <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
             {/* Navigation */}
             <button
-                onClick={() => navigate('/professor/dashboard')}
+                onClick={() => navigate('/instructor-auth-research-2026/portal/dashboard')}
                 className="group flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors font-bold text-[10px] uppercase tracking-widest"
             >
                 <div className="p-2 bg-white rounded-xl border border-slate-200 group-hover:border-indigo-100 group-hover:bg-indigo-50 transition-all shadow-sm">

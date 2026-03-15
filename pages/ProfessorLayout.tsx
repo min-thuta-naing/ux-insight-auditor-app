@@ -22,7 +22,7 @@ export const ProfessorLayout: React.FC<ProfessorLayoutProps> = ({
 
     const handleLogout = async () => {
         setIsLogoutConfirmOpen(false);
-        navigate('/'); // Navigate to landing page FIRST
+        navigate('/instructor-auth-research-2026'); // Navigate to professor landing page FIRST
         await firebaseLogout();
     };
 

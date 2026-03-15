@@ -13,11 +13,13 @@ import {
     deleteDoc
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { Assignment, StudentSubmission, ProfessorProfile } from "../types";
+import { Assignment, StudentSubmission, ProfessorProfile, StudentProfile, SavedAudit } from "../types";
 
 const ASSIGNMENTS_COLLECTION = "assignments";
 const SUBMISSIONS_COLLECTION = "submissions";
 const PROFESSORS_COLLECTION = "professors";
+const STUDENTS_COLLECTION = "students";
+const DRAFTS_COLLECTION = "drafts";
 
 
 // const WORDS = ["STUDY", "AUDIT", "DESIGN", "USER", "PLAN", "HEURISTIC", "UX", "RESEARCH", "TEST", "CHECK", "REVIEW", "FLOW", "BEHAVIOR", "BELIEVE", "ALPHA", "BETA", ];
@@ -184,5 +186,88 @@ export const updateProfessorProfile = async (profile: ProfessorProfile) => {
     const docRef = doc(db, PROFESSORS_COLLECTION, profile.uid);
     await setDoc(docRef, cleaned, { merge: true });
     return cleaned;
+};
+
+/**
+ * Fetches a student's profile by UID
+ */
+export const getStudentProfile = async (uid: string): Promise<StudentProfile | null> => {
+    const docRef = doc(db, STUDENTS_COLLECTION, uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return { uid: docSnap.id, ...docSnap.data() } as StudentProfile;
+    }
+    return null;
+};
+
+/**
+ * Updates or creates a student's profile
+ */
+export const updateStudentProfile = async (profile: StudentProfile) => {
+    const cleaned = cleanObject({
+        ...profile,
+        updatedAt: Date.now()
+    });
+    const docRef = doc(db, STUDENTS_COLLECTION, profile.uid);
+    await setDoc(docRef, cleaned, { merge: true });
+    return cleaned;
+};
+
+/**
+ * Saves a draft audit to Firestore
+ */
+export const saveDraft = async (uid: string, draft: Omit<SavedAudit, "id"> & { id?: string }) => {
+    const data = cleanObject({
+        ...draft,
+        uid,
+        updatedAt: Date.now()
+    });
+    
+    if (draft.id) {
+        const docRef = doc(db, DRAFTS_COLLECTION, draft.id);
+        await setDoc(docRef, data, { merge: true });
+        return { id: draft.id, ...data };
+    } else {
+        const docRef = await addDoc(collection(db, DRAFTS_COLLECTION), data);
+        return { id: docRef.id, ...data };
+    }
+};
+
+/**
+ * Fetches all drafts for a student
+ */
+export const getDrafts = async (uid: string): Promise<SavedAudit[]> => {
+    const q = query(
+        collection(db, DRAFTS_COLLECTION),
+        where("uid", "==", uid)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    } as SavedAudit)).sort((a, b) => b.timestamp - a.timestamp);
+};
+
+/**
+ * Deletes a draft from Firestore
+ */
+export const deleteDraft = async (id: string) => {
+    const docRef = doc(db, DRAFTS_COLLECTION, id);
+    await deleteDoc(docRef);
+};
+
+/**
+ * Fetches all submissions by a student
+ */
+export const getSubmissionsByStudent = async (studentUid: string): Promise<StudentSubmission[]> => {
+    const q = query(
+        collection(db, SUBMISSIONS_COLLECTION),
+        where("studentUid", "==", studentUid)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    } as StudentSubmission)).sort((a, b) => b.timestamp - a.timestamp);
 };
 

@@ -3,12 +3,12 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-
 import { Persona, UsabilityReport, SavedAudit, AuditScope, WcagLevel, StudentSubmission } from './types';
 import { getSavedAudits, deleteAudit } from './services/storageService';
 import { subscribeToAuthChanges } from './services/authService';
-import { getSubmissionsByAssignment, getAssignmentById } from './services/firestoreService';
+import { getSubmissionsByAssignment, getAssignmentById, getStudentProfile } from './services/firestoreService';
 import { User } from 'firebase/auth';
 
 // Page Components
 import { LandingPage } from './pages/LandingPage';
-import { StudentOnboardingPage } from './pages/StudentOnboardingPage';
+import { StudentJoinPage } from './pages/StudentJoinPage';
 import { AuditorPage } from './pages/AuditorPage';
 import { SubmissionSuccessPage } from './pages/SubmissionSuccessPage';
 import { ProfessorLoginPage } from './pages/ProfessorLoginPage';
@@ -17,9 +17,13 @@ import { ProfessorAssignmentsPage } from './pages/ProfessorAssignmentsPage';
 import { ProfessorProfilePage } from './pages/ProfessorProfilePage';
 import { ProfessorSubmissionDetailPage } from './pages/ProfessorSubmissionDetailPage';
 import { ProfessorLayout } from './pages/ProfessorLayout';
+import { ProfessorLandingPage } from './pages/ProfessorLandingPage';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { VerifyEmailPage } from './components/VerifyEmailPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { StudentLoginPage } from './pages/StudentLoginPage';
+import { StudentSignupPage } from './pages/StudentSignupPage';
+import { StudentProfilePage } from './pages/StudentProfilePage';
 
 const App: React.FC = () => {
   const location = useLocation();
@@ -85,19 +89,29 @@ const App: React.FC = () => {
 
   useEffect(() => {
     setSavedAudits(getSavedAudits());
-    if (user && assignmentId) {
-      const loadSubmissions = async () => {
-        const subs = await getSubmissionsByAssignment(assignmentId);
-        setSubmissions(subs);
-
-        const asg = await getAssignmentById(assignmentId);
-        if (asg) {
-          setAssignmentTitle(asg.title);
-          setAssignmentCode(asg.code);
+    
+    const loadData = async () => {
+      if (user) {
+        // Try to load student profile if it exists
+        const profile = await getStudentProfile(user.uid);
+        if (profile) {
+          setStudentName(`${profile.firstName} ${profile.lastName}`);
+          setStudentId(profile.studentId || "");
         }
-      };
-      loadSubmissions();
-    }
+
+        if (assignmentId) {
+          const subs = await getSubmissionsByAssignment(assignmentId);
+          setSubmissions(subs);
+
+          const asg = await getAssignmentById(assignmentId);
+          if (asg) {
+            setAssignmentTitle(asg.title);
+            setAssignmentCode(asg.code);
+          }
+        }
+      }
+    };
+    loadData();
   }, [user, assignmentId]);
 
   const handleLoadAudit = (audit: SavedAudit) => {
@@ -119,7 +133,7 @@ const App: React.FC = () => {
 
   const handleLoadSubmission = (sub: StudentSubmission) => {
     setCurrentProfessorSubmission(sub);
-    navigate('/professor/submission');
+    navigate('/instructor-auth-research-2026/portal/submission');
   };
 
   const params = new URLSearchParams(location.search);
@@ -149,7 +163,7 @@ const App: React.FC = () => {
           oobCode={oobCode}
           onSuccess={() => {
             window.history.replaceState({}, document.title, "/");
-            navigate('/professor/login');
+            navigate('/instructor-auth-research-2026/login');
           }}
           onBack={() => {
             window.history.replaceState({}, document.title, "/");
@@ -172,58 +186,90 @@ const App: React.FC = () => {
         />
       } />
 
-      <Route path="/student/onboarding" element={
-        <StudentOnboardingPage
-          studentName={studentName}
-          setStudentName={setStudentName}
-          studentId={studentId}
-          setStudentId={setStudentId}
-          assignmentCode={assignmentCode}
-          setAssignmentCode={setAssignmentCode}
-          setAssignmentId={setAssignmentId}
-          setAssignmentTitle={setAssignmentTitle}
-          setProfessorId={setProfessorId}
-        />
+      <Route path="/student/join" element={
+        <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
+          <StudentJoinPage
+            user={user}
+            studentName={studentName}
+            setAssignmentId={setAssignmentId}
+            setAssignmentTitle={setAssignmentTitle}
+            setProfessorId={setProfessorId}
+            setSelectedImage={setSelectedImage}
+            setReports={setReports}
+            setSelectedHeuristic={setSelectedHeuristic}
+            setSelectedPersona={setSelectedPersona}
+            setAuditScope={setAuditScope}
+            setWcagLevel={setWcagLevel}
+          />
+        </ProtectedRoute>
       } />
 
-      <Route path="/student/auditor" element={
-        <AuditorPage
-          studentName={studentName}
-          studentId={studentId}
-          assignmentId={assignmentId}
-          professorId={professorId}
-          setLastSubmission={setLastSubmission}
-          selectedImage={selectedImage}
-          setSelectedImage={setSelectedImage}
-          reports={reports}
-          setReports={setReports}
-          selectedHeuristic={selectedHeuristic}
-          setSelectedHeuristic={setSelectedHeuristic}
-          selectedPersona={selectedPersona}
-          setSelectedPersona={setSelectedPersona}
-          auditScope={auditScope}
-          setAuditScope={setAuditScope}
-          wcagLevel={wcagLevel}
-          setWcagLevel={setWcagLevel}
-        />
+      <Route path="/student/auditor/:assignmentId" element={
+        <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
+          <AuditorPage
+            user={user}
+            studentName={studentName}
+            studentId={studentId}
+            assignmentId={assignmentId}
+            assignmentTitle={assignmentTitle}
+            professorId={professorId}
+            setAssignmentId={setAssignmentId}
+            setAssignmentTitle={setAssignmentTitle}
+            setProfessorId={setProfessorId}
+            setLastSubmission={setLastSubmission}
+            selectedImage={selectedImage}
+            setSelectedImage={setSelectedImage}
+            reports={reports}
+            setReports={setReports}
+            selectedHeuristic={selectedHeuristic}
+            setSelectedHeuristic={setSelectedHeuristic}
+            selectedPersona={selectedPersona}
+            setSelectedPersona={setSelectedPersona}
+            auditScope={auditScope}
+            setAuditScope={setAuditScope}
+            wcagLevel={wcagLevel}
+            setWcagLevel={setWcagLevel}
+          />
+        </ProtectedRoute>
       } />
+
 
       <Route path="/student/success" element={
-        <SubmissionSuccessPage
-          lastSubmission={lastSubmission}
-          studentName={studentName}
-          studentId={studentId}
-          setReports={setReports}
-          setSelectedImage={setSelectedImage}
-        />
+        <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
+          <SubmissionSuccessPage
+            lastSubmission={lastSubmission}
+            studentName={studentName}
+            studentId={studentId}
+            setReports={setReports}
+            setSelectedImage={setSelectedImage}
+          />
+        </ProtectedRoute>
       } />
 
-      <Route path="/professor/login" element={
+      <Route path="/instructor-auth-research-2026" element={
+        <ProfessorLandingPage />
+      } />
+
+      <Route path="/instructor-auth-research-2026/login" element={
         <ProfessorLoginPage authMode={authMode} />
       } />
 
-      <Route path="/professor" element={
-        <ProtectedRoute user={user} loading={authLoading}>
+      <Route path="/student/login" element={
+        <StudentLoginPage />
+      } />
+
+      <Route path="/student/signup" element={
+        <StudentSignupPage />
+      } />
+
+      <Route path="/student/profile" element={
+        <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
+          <StudentProfilePage user={user} />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/instructor-auth-research-2026/portal" element={
+        <ProtectedRoute user={user} loading={authLoading} requiredRole="professor">
           <ProfessorLayout
             user={user}
             assignmentCode={assignmentCode}
@@ -232,7 +278,7 @@ const App: React.FC = () => {
           />
         </ProtectedRoute>
       }>
-        <Route index element={<Navigate to="/professor/dashboard" replace />} />
+        <Route index element={<Navigate to="/instructor-auth-research-2026/portal/dashboard" replace />} />
         <Route path="dashboard" element={
           <ProfessorDashboardPage
             submissions={submissions}

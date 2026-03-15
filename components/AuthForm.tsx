@@ -1,19 +1,32 @@
 import React, { useState } from 'react';
 import { signIn, signUp, resetPassword } from '../services/authService';
+import { 
+    updateProfessorProfile, 
+    updateStudentProfile,
+    getProfessorProfile,
+    getStudentProfile 
+} from '../services/firestoreService';
 
 interface AuthFormProps {
     onSuccess: () => void;
     onBack: () => void;
     initialMode?: 'login' | 'signup';
+    role?: 'professor' | 'student';
 }
 
-export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMode = 'login' }) => {
+export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMode = 'login', role = 'professor' }) => {
     const [mode, setMode] = useState<'login' | 'signup' | 'reset'>(initialMode);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    // Profile fields for student signup
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [studentId, setStudentId] = useState("");
+    const [institutionName, setInstitutionName] = useState("");
 
     // Password requirements state
     const [passwordRequirements, setPasswordRequirements] = useState({
@@ -76,6 +89,22 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
         try {
             if (mode === 'login') {
                 const userCredential = await signIn(email, password);
+                
+                // Role verification
+                let profile;
+                if (role === 'professor') {
+                    profile = await getProfessorProfile(userCredential.user.uid);
+                } else {
+                    profile = await getStudentProfile(userCredential.user.uid);
+                }
+
+                if (!profile) {
+                    const { logout } = await import('../services/authService');
+                    await logout();
+                    setError(`Access denied. This account is not registered for the ${role === 'professor' ? 'Professor' : 'Student'} portal.`);
+                    return;
+                }
+
                 if (!userCredential.user.emailVerified) {
                     setError("Your email is not verified yet. Please check your inbox for the verification link.");
                     setSuccessMessage(null);
@@ -88,7 +117,32 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                     setLoading(false);
                     return;
                 }
-                await signUp(email, password);
+                const userCredential = await signUp(email, password);
+                
+                // Create skeleton profile based on role
+                if (role === 'professor') {
+                    await updateProfessorProfile({
+                        uid: userCredential.user.uid,
+                        email: email,
+                        firstName: "",
+                        lastName: "",
+                        profession: "",
+                        institutionType: 'University',
+                        institutionName: "",
+                        updatedAt: Date.now()
+                    });
+                } else {
+                    await updateStudentProfile({
+                        uid: userCredential.user.uid,
+                        email: email,
+                        firstName: firstName,
+                        lastName: lastName,
+                        studentId: studentId,
+                        institutionName: institutionName,
+                        updatedAt: Date.now()
+                    });
+                }
+
                 const { logout } = await import('../services/authService');
                 await logout();
                 setSuccessMessage("Account created! Please check your email to verify your account before logging in.");
@@ -132,11 +186,62 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                className={`w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 ${role === 'student' ? 'focus:ring-student-500 focus:border-student-500' : 'focus:ring-indigo-500 focus:border-indigo-500'} outline-none transition-all`}
                                 placeholder="name@example.com"
                             />
                         </div>
                     </div>
+
+                    {mode === 'signup' && role === 'student' && (
+                        <>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">First Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={firstName}
+                                        onChange={(e) => setFirstName(e.target.value)}
+                                        className={`w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 ${role === 'student' ? 'focus:ring-student-500 focus:border-student-500' : 'focus:ring-indigo-500 focus:border-indigo-500'} outline-none transition-all`}
+                                        placeholder="John"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Last Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={lastName}
+                                        onChange={(e) => setLastName(e.target.value)}
+                                        className={`w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 ${role === 'student' ? 'focus:ring-student-500 focus:border-student-500' : 'focus:ring-indigo-500 focus:border-indigo-500'} outline-none transition-all`}
+                                        placeholder="Doe"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">Student ID</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={studentId}
+                                    onChange={(e) => setStudentId(e.target.value)}
+                                    className={`w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 ${role === 'student' ? 'focus:ring-student-500 focus:border-student-500' : 'focus:ring-indigo-500 focus:border-indigo-500'} outline-none transition-all`}
+                                    placeholder="65XXXXXXXX"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">Institution Name</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={institutionName}
+                                    onChange={(e) => setInstitutionName(e.target.value)}
+                                    className={`w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 ${role === 'student' ? 'focus:ring-student-500 focus:border-student-500' : 'focus:ring-indigo-500 focus:border-indigo-500'} outline-none transition-all`}
+                                    placeholder="e.g. Stanford University"
+                                />
+                            </div>
+                        </>
+                    )}
 
                     {mode !== 'reset' && (
                         <div>
@@ -146,7 +251,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                                     <button
                                         type="button"
                                         onClick={() => setMode('reset')}
-                                        className="text-xs text-indigo-600 hover:underline font-medium"
+                                        className={`text-xs ${role === 'student' ? 'text-student-600' : 'text-indigo-600'} hover:underline font-medium`}
                                     >
                                         Forgot Password?
                                     </button>
@@ -168,7 +273,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                                     }}
                                     className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl outline-none transition-all ${mode === 'signup' && password.length > 0 && !isPasswordValid
                                         ? 'border-red-400 focus:ring-2 focus:ring-red-500'
-                                        : 'border-slate-200 focus:ring-2 focus:ring-indigo-500'
+                                        : `border-slate-200 focus:ring-2 ${role === 'student' ? 'focus:ring-student-500' : 'focus:ring-indigo-500'}`
                                         }`}
                                     placeholder="••••••••"
                                 />
@@ -232,7 +337,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                                                 setLoading(false);
                                             }
                                         }}
-                                        className="text-xs text-indigo-600 font-bold hover:underline mt-1"
+                                        className={`text-xs ${role === 'student' ? 'text-student-600' : 'text-indigo-600'} font-bold hover:underline mt-1`}
                                     >
                                         Resend Verification Email
                                     </button>
@@ -264,12 +369,17 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                     <button
                         type="submit"
                         disabled={loading}
-                        className={`w-full py-3 px-4 rounded-xl text-white font-bold text-lg shadow-lg transform transition-all hover:scale-[1.02] active:scale-[0.98] ${loading ? 'bg-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700'
-                            }`}
+                        className={`w-full py-3 px-4 rounded-xl text-white font-bold text-lg shadow-lg transform transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                            loading 
+                                ? 'bg-slate-400 cursor-not-allowed' 
+                                : role === 'student' 
+                                    ? 'bg-student-100 text-student-700 hover:bg-student-200 border border-student-200' 
+                                    : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700'
+                        }`}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
-                                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                <svg className={`animate-spin h-5 w-5 ${role === 'student' ? 'text-student-600' : 'text-white'}`} fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
@@ -286,7 +396,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                         {mode === 'reset' ? (
                             <button
                                 onClick={() => setMode('login')}
-                                className="text-indigo-600 font-bold hover:underline"
+                                className={`font-bold hover:underline ${role === 'student' ? 'text-student-600' : 'text-indigo-600'}`}
                             >
                                 Back to Log In
                             </button>
@@ -295,7 +405,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                                 {mode === 'login' ? "Don't have an account?" : "Already have an account?"}{" "}
                                 <button
                                     onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                                    className="text-indigo-600 font-bold hover:underline"
+                                    className={`font-bold hover:underline ${role === 'student' ? 'text-student-600' : 'text-indigo-600'}`}
                                 >
                                     {mode === 'login' ? "Sign Up" : "Log In"}
                                 </button>

@@ -32,7 +32,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </div>
                 </div>
             </header>
-            <div className="flex-1 flex flex-col justify-center items-center p-4">
+            <div className="flex-1 flex flex-col justify-center items-center p-6 bg-gradient-to-b from-slate-50 to-white">
                 <HistoryModal
                     isOpen={isHistoryOpen}
                     onClose={() => setIsHistoryOpen(false)}
@@ -40,40 +40,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     onLoad={onLoadAudit}
                     onDelete={onDeleteAudit}
                 />
-                <div className="max-w-4xl w-full text-center space-y-8">
-                    <div>
-                        <h1 className="text-4xl font-extrabold text-slate-900 mb-2">UX Insight Auditor</h1>
-                        <p className="text-xl text-slate-600">AI-Powered Heuristic Evaluation Platform</p>
+                <div className="max-w-4xl w-full text-center space-y-12">
+                    <div className="space-y-4">
+                        <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight">
+                            UX Insight <span className="text-student-500">Auditor</span>
+                        </h1>
+                        <p className="text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
+                            Master heuristic evaluation with AI-powered insights. Analyze interfaces, discover usability issues, and submit professional reports.
+                        </p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-8 mt-12">
-                        <div className="bg-white p-8 rounded-2xl shadow-lg border-2 border-transparent hover:border-indigo-500 transition-all cursor-pointer group" onClick={() => navigate('/student/onboarding')}>
-                            <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-indigo-600 transition-colors">
-                                <svg className="w-8 h-8 text-indigo-600 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    <div className="max-w-md mx-auto">
+                        <div className="bg-white p-10 rounded-3xl shadow-2xl border border-slate-100 space-y-8 transform hover:scale-[1.01] transition-all">
+                            <div className="w-20 h-20 bg-student-100 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-student-200/50">
+                                <svg className="w-10 h-10 text-student-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
                             </div>
-                            <h2 className="text-2xl font-bold text-slate-800 mb-2">I am a Student</h2>
-                            <p className="text-slate-500">Join a session, run audits without login, and submit assignments directly to your professor.</p>
-                            <button className="mt-6 w-full py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700">Start Audit Session</button>
-                        </div>
-
-                        <div className="bg-white p-8 rounded-2xl shadow-lg border-2 border-transparent hover:border-violet-500 transition-all cursor-pointer group" onClick={() => { setAuthMode('login'); navigate('/professor/login'); }}>
-                            <div className="w-16 h-16 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-violet-600 transition-colors">
-                                <svg className="w-8 h-8 text-violet-600 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                            
+                            <div className="space-y-4">
+                                <button 
+                                    onClick={() => navigate('/student/login')}
+                                    className="w-full py-4 bg-student-500 text-white rounded-2xl font-bold text-lg hover:bg-student-600 transition-all shadow-lg shadow-student-200 active:scale-95"
+                                >
+                                    Log In to Account
+                                </button>
+                                <button 
+                                    onClick={() => navigate('/student/signup')}
+                                    className="w-full py-4 bg-white border-2 border-student-200 text-student-600 rounded-2xl font-bold text-lg hover:bg-student-50 transition-all active:scale-95"
+                                >
+                                    Create New Account
+                                </button>
                             </div>
-                            <h2 className="text-2xl font-bold text-slate-800 mb-2">I am an Instructor</h2>
-                            <p className="text-slate-500">Manage assignments, view class analytics, and grade student submissions.</p>
-                            <button className="mt-6 w-full py-2 bg-violet-600 text-white rounded-lg font-semibold hover:bg-violet-700">Enter Instructor Portal</button>
                         </div>
                     </div>
 
-                    {savedAudits.length > 0 && (
-                        <div className="mt-8">
-                            <button onClick={() => setIsHistoryOpen(true)} className="text-sm text-slate-500 hover:text-indigo-600 flex items-center justify-center gap-2 mx-auto">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                Resume previous session ({savedAudits.length} saved)
-                            </button>
-                        </div>
-                    )}
+
                 </div>
             </div>
         </div>

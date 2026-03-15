@@ -15,7 +15,7 @@ export const ProfessorAssignmentsPage: React.FC<ProfessorAssignmentsPageProps> =
 
     const handleSelect = (id: string) => {
         onSelectAssignment(id);
-        navigate('/professor/dashboard');
+        navigate('/instructor-auth-research-2026/portal/dashboard');
     };
 
     return (
