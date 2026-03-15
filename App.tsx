@@ -24,6 +24,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { StudentLoginPage } from './pages/StudentLoginPage';
 import { StudentSignupPage } from './pages/StudentSignupPage';
 import { StudentProfilePage } from './pages/StudentProfilePage';
+import { ToastProvider } from './components/Toast';
 
 const App: React.FC = () => {
   const location = useLocation();
@@ -174,138 +175,140 @@ const App: React.FC = () => {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={
-        <LandingPage
-          isHistoryOpen={isHistoryOpen}
-          setIsHistoryOpen={setIsHistoryOpen}
-          savedAudits={savedAudits}
-          onLoadAudit={handleLoadAudit}
-          onDeleteAudit={handleDeleteAudit}
-          setAuthMode={setAuthMode}
-        />
-      } />
-
-      <Route path="/student/join" element={
-        <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
-          <StudentJoinPage
-            user={user}
-            studentName={studentName}
-            setAssignmentId={setAssignmentId}
-            setAssignmentTitle={setAssignmentTitle}
-            setProfessorId={setProfessorId}
-            setSelectedImage={setSelectedImage}
-            setReports={setReports}
-            setSelectedHeuristic={setSelectedHeuristic}
-            setSelectedPersona={setSelectedPersona}
-            setAuditScope={setAuditScope}
-            setWcagLevel={setWcagLevel}
-          />
-        </ProtectedRoute>
-      } />
-
-      <Route path="/student/auditor/:assignmentId" element={
-        <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
-          <AuditorPage
-            user={user}
-            studentName={studentName}
-            studentId={studentId}
-            assignmentId={assignmentId}
-            assignmentTitle={assignmentTitle}
-            professorId={professorId}
-            setAssignmentId={setAssignmentId}
-            setAssignmentTitle={setAssignmentTitle}
-            setProfessorId={setProfessorId}
-            setLastSubmission={setLastSubmission}
-            selectedImage={selectedImage}
-            setSelectedImage={setSelectedImage}
-            reports={reports}
-            setReports={setReports}
-            selectedHeuristic={selectedHeuristic}
-            setSelectedHeuristic={setSelectedHeuristic}
-            selectedPersona={selectedPersona}
-            setSelectedPersona={setSelectedPersona}
-            auditScope={auditScope}
-            setAuditScope={setAuditScope}
-            wcagLevel={wcagLevel}
-            setWcagLevel={setWcagLevel}
-          />
-        </ProtectedRoute>
-      } />
-
-
-      <Route path="/student/success" element={
-        <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
-          <SubmissionSuccessPage
-            lastSubmission={lastSubmission}
-            studentName={studentName}
-            studentId={studentId}
-            setReports={setReports}
-            setSelectedImage={setSelectedImage}
-          />
-        </ProtectedRoute>
-      } />
-
-      <Route path="/instructor-auth-research-2026" element={
-        <ProfessorLandingPage />
-      } />
-
-      <Route path="/instructor-auth-research-2026/login" element={
-        <ProfessorLoginPage authMode={authMode} />
-      } />
-
-      <Route path="/student/login" element={
-        <StudentLoginPage />
-      } />
-
-      <Route path="/student/signup" element={
-        <StudentSignupPage />
-      } />
-
-      <Route path="/student/profile" element={
-        <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
-          <StudentProfilePage user={user} />
-        </ProtectedRoute>
-      } />
-
-      <Route path="/instructor-auth-research-2026/portal" element={
-        <ProtectedRoute user={user} loading={authLoading} requiredRole="professor">
-          <ProfessorLayout
-            user={user}
-            assignmentCode={assignmentCode}
-            isPresentationOpen={isPresentationOpen}
-            setIsPresentationOpen={setIsPresentationOpen}
-          />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Navigate to="/instructor-auth-research-2026/portal/dashboard" replace />} />
-        <Route path="dashboard" element={
-          <ProfessorDashboardPage
-            submissions={submissions}
-            setSubmissions={setSubmissions}
-            assignmentTitle={assignmentTitle}
-            assignmentCode={assignmentCode}
-            assignmentId={assignmentId}
-            handleLoadSubmission={handleLoadSubmission}
-            setIsPresentationOpen={setIsPresentationOpen}
+    <ToastProvider>
+      <Routes>
+        <Route path="/" element={
+          <LandingPage
+            isHistoryOpen={isHistoryOpen}
+            setIsHistoryOpen={setIsHistoryOpen}
+            savedAudits={savedAudits}
+            onLoadAudit={handleLoadAudit}
+            onDeleteAudit={handleDeleteAudit}
+            setAuthMode={setAuthMode}
           />
         } />
-        <Route path="assignments" element={
-          <ProfessorAssignmentsPage
-            professorId={user?.uid || ""}
-            onSelectAssignment={(id) => setAssignmentId(id)}
-          />
-        } />
-        <Route path="profile" element={
-          <ProfessorProfilePage user={user} />
-        } />
-        <Route path="submission" element={
-          <ProfessorSubmissionDetailPage submission={currentProfessorSubmission} />
-        } />
-      </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="/student/join" element={
+          <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
+            <StudentJoinPage
+              user={user}
+              studentName={studentName}
+              setAssignmentId={setAssignmentId}
+              setAssignmentTitle={setAssignmentTitle}
+              setProfessorId={setProfessorId}
+              setSelectedImage={setSelectedImage}
+              setReports={setReports}
+              setSelectedHeuristic={setSelectedHeuristic}
+              setSelectedPersona={setSelectedPersona}
+              setAuditScope={setAuditScope}
+              setWcagLevel={setWcagLevel}
+            />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/student/auditor/:assignmentId" element={
+          <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
+            <AuditorPage
+              user={user}
+              studentName={studentName}
+              studentId={studentId}
+              assignmentId={assignmentId}
+              assignmentTitle={assignmentTitle}
+              professorId={professorId}
+              setAssignmentId={setAssignmentId}
+              setAssignmentTitle={setAssignmentTitle}
+              setProfessorId={setProfessorId}
+              setLastSubmission={setLastSubmission}
+              selectedImage={selectedImage}
+              setSelectedImage={setSelectedImage}
+              reports={reports}
+              setReports={setReports}
+              selectedHeuristic={selectedHeuristic}
+              setSelectedHeuristic={setSelectedHeuristic}
+              selectedPersona={selectedPersona}
+              setSelectedPersona={setSelectedPersona}
+              auditScope={auditScope}
+              setAuditScope={setAuditScope}
+              wcagLevel={wcagLevel}
+              setWcagLevel={setWcagLevel}
+            />
+          </ProtectedRoute>
+        } />
+
+
+        <Route path="/student/success" element={
+          <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
+            <SubmissionSuccessPage
+              lastSubmission={lastSubmission}
+              studentName={studentName}
+              studentId={studentId}
+              setReports={setReports}
+              setSelectedImage={setSelectedImage}
+            />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/instructor-auth-research-2026" element={
+          <ProfessorLandingPage />
+        } />
+
+        <Route path="/instructor-auth-research-2026/login" element={
+          <ProfessorLoginPage authMode={authMode} />
+        } />
+
+        <Route path="/student/login" element={
+          <StudentLoginPage />
+        } />
+
+        <Route path="/student/signup" element={
+          <StudentSignupPage />
+        } />
+
+        <Route path="/student/profile" element={
+          <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
+            <StudentProfilePage user={user} />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/instructor-auth-research-2026/portal" element={
+          <ProtectedRoute user={user} loading={authLoading} requiredRole="professor">
+            <ProfessorLayout
+              user={user}
+              assignmentCode={assignmentCode}
+              isPresentationOpen={isPresentationOpen}
+              setIsPresentationOpen={setIsPresentationOpen}
+            />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="/instructor-auth-research-2026/portal/dashboard" replace />} />
+          <Route path="dashboard" element={
+            <ProfessorDashboardPage
+              submissions={submissions}
+              setSubmissions={setSubmissions}
+              assignmentTitle={assignmentTitle}
+              assignmentCode={assignmentCode}
+              assignmentId={assignmentId}
+              handleLoadSubmission={handleLoadSubmission}
+              setIsPresentationOpen={setIsPresentationOpen}
+            />
+          } />
+          <Route path="assignments" element={
+            <ProfessorAssignmentsPage
+              professorId={user?.uid || ""}
+              onSelectAssignment={(id) => setAssignmentId(id)}
+            />
+          } />
+          <Route path="profile" element={
+            <ProfessorProfilePage user={user} />
+          } />
+          <Route path="submission" element={
+            <ProfessorSubmissionDetailPage submission={currentProfessorSubmission} />
+          } />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ToastProvider>
   );
 };
 

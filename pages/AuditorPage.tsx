@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { User } from 'firebase/auth';
 import { HEURISTICS } from '../constants';
-import { HeuristicDef, Persona, UsabilityReport, SavedAudit, AuditScope, WcagLevel, StudentSubmission } from '../types';
+import { HeuristicDef, Persona, UsabilityReport, SavedAudit, AuditScope, WcagLevel, StudentSubmission, ViolationCounts, SeverityCounts } from '../types';
 import { logout as firebaseLogout } from '../services/authService';
 import { analyzeImage } from '../services/geminiService';
 import { 
@@ -12,6 +12,7 @@ import {
     deleteDraft, 
     getSubmissionsByStudent 
 } from '../services/firestoreService';
+import { useToast } from '../components/Toast';
 import { uploadImageToCloudinary } from '../services/cloudinaryService';
 import { FindingsList } from '../components/FindingsList';
 import { ImageViewer } from '../components/ImageViewer';
@@ -65,6 +66,7 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
     setWcagLevel
 }) => {
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const [loading, setLoading] = useState<boolean>(false);
     const [progressMessage, setProgressMessage] = useState<string>("");
     const [selectedFindingId, setSelectedFindingId] = useState<string | undefined>(undefined);
@@ -189,10 +191,29 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
             setProgressMessage("");
         }
     };
+    
+    const calculateAnalytics = () => {
+        const vCounts: ViolationCounts = {};
+        const sCounts: SeverityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
+        
+        reports.forEach(report => {
+            report.findings.forEach(finding => {
+                const hId = finding.heuristic_id || report.heuristic_id;
+                vCounts[hId] = (vCounts[hId] || 0) + 1;
+                if (finding.severity in sCounts) {
+                    sCounts[finding.severity as keyof SeverityCounts]++;
+                }
+            });
+        });
+        
+        return { violationCounts: vCounts, severityCounts: sCounts };
+    };
 
     const handleSaveDraft = async () => {
         if (!selectedImage || reports.length === 0 || !user) return;
         try {
+            const { violationCounts, severityCounts } = calculateAnalytics();
+            
             const draftData: Omit<SavedAudit, "id"> = {
                 timestamp: Date.now(),
                 imageSrc: selectedImage,
@@ -201,7 +222,9 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                 persona: selectedPersona,
                 auditScope: auditScope,
                 wcagLevel: wcagLevel,
-                assignmentId: assignmentId
+                assignmentId: assignmentId,
+                violationCounts,
+                severityCounts
             };
             
             console.log("Saving draft with assignmentId:", assignmentId);
@@ -209,9 +232,9 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
             await saveDraft(user.uid, draftData);
             const drafts = await getDrafts(user.uid);
             setSavedAudits(drafts);
-            alert("Draft saved to cloud!");
+            showToast("Draft saved successfully!", "success", "You can view and resume your drafts from 'My History'.");
         } catch (err) {
-            alert(err instanceof Error ? err.message : "Failed to save draft.");
+            showToast("Failed to save draft", "error", err instanceof Error ? err.message : "Please try again.");
         }
     };
 
@@ -219,6 +242,8 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
         if (!selectedImage || reports.length === 0) return;
         setLoading(true);
         try {
+            const { violationCounts, severityCounts } = calculateAnalytics();
+
             const auditData: SavedAudit = {
                 id: Date.now().toString(),
                 timestamp: Date.now(),
@@ -228,7 +253,9 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                 persona: selectedPersona,
                 auditScope: auditScope,
                 wcagLevel: wcagLevel,
-                assignmentId: assignmentId
+                assignmentId: assignmentId,
+                violationCounts,
+                severityCounts
             };
 
             const randomSuffix = Math.floor(1000 + Math.random() * 9000);
@@ -253,7 +280,9 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                 assignmentId,
                 professorId,
                 timestamp: Date.now(),
-                auditData: auditDataWithUrl
+                auditData: auditDataWithUrl,
+                violationCounts,
+                severityCounts
             };
 
             const savedSubmission = await submitToFirestore(submission);
@@ -266,7 +295,7 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                 setSubmissionHistory(submissions);
             }
         } catch (err) {
-            alert(err instanceof Error ? err.message : "Failed to submit assignment.");
+            showToast("Submission failed", "error", err instanceof Error ? err.message : "Failed to submit assignment.");
         } finally {
             setLoading(false);
         }

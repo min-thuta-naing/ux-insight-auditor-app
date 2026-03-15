@@ -46,6 +46,17 @@ export type Persona = 'General Public' | 'Elderly/Novice' | 'Developer/Expert';
 export type AuditScope = 'UX' | 'Inclusive';
 export type WcagLevel = 'A' | 'AA' | 'AAA';
 
+export interface ViolationCounts {
+  [heuristicId: string]: number;
+}
+
+export interface SeverityCounts {
+  Critical: number;
+  High: number;
+  Medium: number;
+  Low: number;
+}
+
 export interface SavedAudit {
   id: string;
   timestamp: number;
@@ -56,6 +67,8 @@ export interface SavedAudit {
   auditScope: AuditScope;
   wcagLevel: WcagLevel;
   assignmentId: string;
+  violationCounts?: ViolationCounts;
+  severityCounts?: SeverityCounts;
 }
 
 // --- New Types for Platform Features ---
@@ -80,6 +93,8 @@ export interface StudentSubmission {
   professorId: string;
   timestamp: number;
   auditData: SavedAudit;
+  violationCounts?: ViolationCounts;
+  severityCounts?: SeverityCounts;
 }
 
 export interface ClassStats {

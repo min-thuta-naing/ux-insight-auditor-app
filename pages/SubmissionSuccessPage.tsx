@@ -103,8 +103,8 @@ export const SubmissionSuccessPage: React.FC<SubmissionSuccessPageProps> = ({
                     </button>
 
                     <div className="flex gap-4">
-                        <button onClick={() => { setReports([]); setSelectedImage(null); navigate('/'); }} className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors">Return Home</button>
-                        <button onClick={() => { setReports([]); setSelectedImage(null); navigate('/student/auditor'); }} className="flex-1 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 font-bold shadow-lg transition-transform active:scale-95">New Audit</button>
+                        <button onClick={() => { setReports([]); setSelectedImage(null); navigate('/student/join'); }} className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors">Return Home</button>
+                        <button onClick={() => { setReports([]); setSelectedImage(null); navigate('/student/join'); }} className="flex-1 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 font-bold shadow-lg transition-transform active:scale-95">New Audit</button>
                     </div>
                 </div>
             </div>
