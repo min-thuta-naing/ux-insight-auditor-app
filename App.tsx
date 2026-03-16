@@ -144,7 +144,7 @@ const App: React.FC = () => {
 
   if (mode === 'resetPassword' && oobCode) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#F9F8F6] flex items-center justify-center p-4">
         <ResetPasswordPage
           oobCode={oobCode}
           onSuccess={() => {
@@ -160,12 +160,12 @@ const App: React.FC = () => {
 
   if (mode === 'verifyEmail' && oobCode) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#F9F8F6] flex items-center justify-center p-4">
         <VerifyEmailPage
           oobCode={oobCode}
           onSuccess={() => {
             window.history.replaceState({}, document.title, "/");
-            navigate('/instructor-auth-research-2026/login');
+            navigate('/student/login');
           }}
           onBack={() => {
             window.history.replaceState({}, document.title, "/");

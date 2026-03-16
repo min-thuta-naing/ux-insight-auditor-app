@@ -43,39 +43,45 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ oobCode, onSuc
     }, [oobCode, onSuccess]);
 
     return (
-        <div className="w-full max-w-md mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-100 p-8 text-center">
+        <div className="w-full max-w-md mx-auto bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-[#8C5A3C] p-10 text-center animate-in fade-in zoom-in duration-500">
             {status === 'verifying' && (
-                <div className="space-y-4">
-                    <div className="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto"></div>
-                    <h2 className="text-2xl font-bold text-slate-900">Verifying your email...</h2>
-                    <p className="text-slate-500">Please wait while we confirm your account.</p>
+                <div className="space-y-6">
+                    <div className="animate-spin h-14 w-14 border-4 border-student-600 border-t-transparent rounded-full mx-auto"></div>
+                    <div>
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Verifying your email...</h2>
+                        <p className="text-slate-500 mt-2 font-medium">Please wait while we confirm your account.</p>
+                    </div>
                 </div>
             )}
 
             {status === 'success' && (
-                <div className="space-y-4">
-                    <div className="h-12 w-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
-                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <div className="space-y-6">
+                    <div className="h-16 w-16 bg-student-100 text-student-600 rounded-[1.5rem] flex items-center justify-center mx-auto shadow-sm">
+                        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-900">Email Verified!</h2>
-                    <p className="text-slate-500">Your account is now active. Redirecting you to login...</p>
+                    <div>
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Email Verified!</h2>
+                        <p className="text-slate-500 mt-2 font-medium">Your account is now active. Redirecting you to login...</p>
+                    </div>
                 </div>
             )}
 
             {status === 'error' && (
-                <div className="space-y-4">
-                    <div className="h-12 w-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
-                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <div className="space-y-6">
+                    <div className="h-16 w-16 bg-red-50 text-red-600 rounded-[1.5rem] flex items-center justify-center mx-auto border border-red-100">
+                        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-900">Verification Failed</h2>
-                    <p className="text-red-500 text-sm">{error}</p>
+                    <div>
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Verification Failed</h2>
+                        <p className="text-red-500 text-sm mt-2 font-medium">{error}</p>
+                    </div>
                     <button
                         onClick={onBack}
-                        className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all"
+                        className="w-full py-4 bg-white border-2 border-[#D4C9BE] text-slate-600 rounded-2xl font-black hover:bg-slate-50 transition-all shadow-sm"
                     >
                         Back to Home
                     </button>

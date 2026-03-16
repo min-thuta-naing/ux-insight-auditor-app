@@ -55,26 +55,26 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, o
 
     if (verifying) {
         return (
-            <div className="flex flex-col items-center justify-center p-8 bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100">
-                <div className="animate-spin h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full mb-4"></div>
-                <p className="text-slate-600 font-medium">Verifying reset link...</p>
+            <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[2.5rem] shadow-xl max-w-md w-full border border-[#8C5A3C] animate-in fade-in zoom-in duration-500">
+                <div className="animate-spin h-12 w-12 border-4 border-student-600 border-t-transparent rounded-full mb-6"></div>
+                <p className="text-slate-600 font-bold tracking-tight">Verifying reset link...</p>
             </div>
         );
     }
 
     if (success) {
         return (
-            <div className="p-8 bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100 text-center">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="p-12 bg-white rounded-[2.5rem] shadow-xl max-w-md w-full border border-[#8C5A3C] text-center animate-in fade-in scale-in duration-500">
+                <div className="w-20 h-20 bg-student-100 text-student-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-sm">
+                    <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                 </div>
-                <h2 className="text-3xl font-bold text-slate-900 mb-2">Password Reset!</h2>
-                <p className="text-slate-600 mb-8">Your password has been successfully updated. Redirecting to login...</p>
+                <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Password Reset!</h2>
+                <p className="text-slate-500 mb-10 font-medium font-medium leading-relaxed">Your password has been successfully updated. Redirecting to login...</p>
                 <button
                     onClick={onSuccess}
-                    className="w-full py-3 px-4 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all"
+                    className="w-full py-4 px-4 rounded-2xl bg-student-600 text-white font-black text-lg hover:bg-student-700 shadow-xl shadow-student-200/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                     Go to login
                 </button>
@@ -83,18 +83,18 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, o
     }
 
     return (
-        <div className="w-full max-w-md mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-100">
-            <div className="p-8">
-                <div className="text-center mb-8">
-                    <h2 className="text-3xl font-extrabold text-slate-900">New Password</h2>
-                    <p className="text-slate-500 mt-2">
+        <div className="w-full max-w-md mx-auto bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-[#8C5A3C] p-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="">
+                <div className="text-center mb-10">
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">New Password</h2>
+                    <p className="text-slate-500 mt-2 font-medium">
                         {email ? `Resetting password for ${email}` : "Enter your new password below"}
                     </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">New Password</label>
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">New Password</label>
                         <div className="relative">
                             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -107,14 +107,14 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, o
                                 minLength={6}
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                className="w-full pl-10 pr-4 py-4 bg-slate-50 border-2 border-[#D4C9BE] rounded-3xl focus:ring-4 focus:ring-student-500/10 focus:border-student-500 outline-none transition-all placeholder:text-slate-300"
                                 placeholder="••••••••"
                             />
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Confirm New Password</label>
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Confirm New Password</label>
                         <div className="relative">
                             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -127,25 +127,25 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, o
                                 minLength={6}
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                className="w-full pl-10 pr-4 py-4 bg-slate-50 border-2 border-[#D4C9BE] rounded-3xl focus:ring-4 focus:ring-student-500/10 focus:border-student-500 outline-none transition-all placeholder:text-slate-300"
                                 placeholder="••••••••"
                             />
                         </div>
                     </div>
 
                     {error && (
-                        <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600 flex items-start gap-2">
-                            <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600 flex items-start gap-3 animate-shake">
+                            <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span>{error}</span>
+                            <span className="font-medium">{error}</span>
                         </div>
                     )}
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className={`w-full py-3 px-4 rounded-xl text-white font-bold text-lg shadow-lg transform transition-all hover:scale-[1.02] active:scale-[0.98] ${loading ? 'bg-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700'}`}
+                        className={`w-full py-4 px-4 rounded-2xl text-white font-black text-lg shadow-xl transform transition-all hover:scale-[1.02] active:scale-[0.98] ${loading ? 'bg-slate-200 cursor-not-allowed shadow-none' : 'bg-student-600 hover:bg-student-700 shadow-student-200/50'}`}
                     >
                         {loading ? "Updating..." : "Reset Password"}
                     </button>
@@ -154,7 +154,7 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, o
                 <div className="mt-8 text-center">
                     <button
                         onClick={onBack}
-                        className="text-sm text-indigo-600 font-bold hover:underline"
+                        className="text-xs text-slate-400 hover:text-slate-600 uppercase tracking-widest font-black"
                     >
                         Back to Log In
                     </button>
