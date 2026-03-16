@@ -16,9 +16,9 @@ export const signIn = (email: string, password: string) => {
     return signInWithEmailAndPassword(auth, email, password);
 };
 
-export const signUp = async (email: string, password: string) => {
+export const signUp = async (email: string, password: string, sendVerification: boolean = true) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    if (userCredential.user) {
+    if (userCredential.user && sendVerification) {
         await sendEmailVerification(userCredential.user);
     }
     return userCredential;

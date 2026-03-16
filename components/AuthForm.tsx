@@ -105,7 +105,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                     return;
                 }
 
-                if (!userCredential.user.emailVerified) {
+                if (role === 'student' && !userCredential.user.emailVerified) {
                     setError("Your email is not verified yet. Please check your inbox for the verification link.");
                     setSuccessMessage(null);
                     return;
@@ -117,7 +117,20 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                     setLoading(false);
                     return;
                 }
-                const userCredential = await signUp(email, password);
+
+                if (mode === 'signup' && role === 'professor') {
+                    const { ALLOWED_PROFESSOR_DOMAINS, ALLOWED_PROFESSOR_EMAILS } = await import('../constants');
+                    const isDomainAllowed = ALLOWED_PROFESSOR_DOMAINS.some(domain => email.toLowerCase().endsWith(`@${domain}`));
+                    const isEmailWhitelisted = ALLOWED_PROFESSOR_EMAILS.some(allowedEmail => email.toLowerCase() === allowedEmail.toLowerCase());
+
+                    if (!isDomainAllowed && !isEmailWhitelisted) {
+                        setError("This email is not authorized for instructor registration. Only lecturers accounts can register through this portal.");
+                        setLoading(false);
+                        return;
+                    }
+                }
+
+                const userCredential = await signUp(email, password, role === 'student');
                 
                 // Create skeleton profile based on role
                 if (role === 'professor') {
@@ -145,7 +158,12 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
 
                 const { logout } = await import('../services/authService');
                 await logout();
-                setSuccessMessage("Account created! Please check your email to verify your account before logging in.");
+                
+                if (role === 'professor') {
+                    setSuccessMessage("Account created! You can now log in with your credentials.");
+                } else {
+                    setSuccessMessage("Account created! Please check your email to verify your account before logging in.");
+                }
                 setMode('login'); // Switch to login mode after signup
             } else {
                 await resetPassword(email);

@@ -288,7 +288,7 @@ const App: React.FC = () => {
         } />
 
         <Route path="/instructor-auth-research-2026/login" element={
-          <ProfessorLoginPage authMode={authMode} />
+          <ProfessorLoginPage authMode={location.search.includes('mode=signup') ? 'signup' : 'login'} />
         } />
 
         <Route path="/student/login" element={

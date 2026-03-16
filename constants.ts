@@ -62,3 +62,9 @@ export const HEURISTICS: Record<string, HeuristicDef> = {
     instruction: "AUDIT FOCUS: SUPPORT & ONBOARDING. 1. Scan for help entry points. 2. Analyze availability and context. 3. Evaluate absence of help mechanisms."
   }
 };
+
+export const ALLOWED_PROFESSOR_DOMAINS = ['mfu.ac.th'];
+export const ALLOWED_PROFESSOR_EMAILS = [
+  'thutaminn118@gmail.com',
+  'raise.mfu@gmail.com'
+];
