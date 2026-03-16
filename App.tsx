@@ -24,6 +24,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { StudentLoginPage } from './pages/StudentLoginPage';
 import { StudentSignupPage } from './pages/StudentSignupPage';
 import { StudentProfilePage } from './pages/StudentProfilePage';
+import { StudentSubmissionDetailPage } from './pages/StudentSubmissionDetailPage';
 import { ToastProvider } from './components/Toast';
 
 const App: React.FC = () => {
@@ -193,6 +194,7 @@ const App: React.FC = () => {
             <StudentJoinPage
               user={user}
               studentName={studentName}
+              studentId={studentId}
               setAssignmentId={setAssignmentId}
               setAssignmentTitle={setAssignmentTitle}
               setProfessorId={setProfessorId}
@@ -209,6 +211,35 @@ const App: React.FC = () => {
         <Route path="/student/auditor/:assignmentId" element={
           <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
             <AuditorPage
+              user={user}
+              studentName={studentName}
+              studentId={studentId}
+              assignmentId={assignmentId}
+              assignmentTitle={assignmentTitle}
+              professorId={professorId}
+              setAssignmentId={setAssignmentId}
+              setAssignmentTitle={setAssignmentTitle}
+              setProfessorId={setProfessorId}
+              setLastSubmission={setLastSubmission}
+              selectedImage={selectedImage}
+              setSelectedImage={setSelectedImage}
+              reports={reports}
+              setReports={setReports}
+              selectedHeuristic={selectedHeuristic}
+              setSelectedHeuristic={setSelectedHeuristic}
+              selectedPersona={selectedPersona}
+              setSelectedPersona={setSelectedPersona}
+              auditScope={auditScope}
+              setAuditScope={setAuditScope}
+              wcagLevel={wcagLevel}
+              setWcagLevel={setWcagLevel}
+            />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/student/submission-detail/:assignmentId" element={
+          <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
+            <StudentSubmissionDetailPage
               user={user}
               studentName={studentName}
               studentId={studentId}

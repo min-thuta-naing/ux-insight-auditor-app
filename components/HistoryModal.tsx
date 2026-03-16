@@ -72,7 +72,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
 
         {/* Modal Panel */}
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div className="relative inline-flex flex-col align-top bg-white rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-4 sm:align-top sm:max-w-3xl sm:w-full h-[95vh]">
+        <div className="relative inline-flex flex-col align-top bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-4 sm:align-top sm:max-w-3xl sm:w-full h-[95vh]">
           
           {/* Header */}
           <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-[#D4C9BE]">
@@ -91,23 +91,23 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
             </div>
             
             {/* Tabs */}
-            <div className="flex gap-2">
+            <div className="flex p-1 bg-slate-100 rounded-3xl mb-4">
                 <button 
                     onClick={() => setActiveTab('drafts')}
-                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                    className={`flex-1 py-3 rounded-3xl text-sm font-bold transition-all ${
                         activeTab === 'drafts' 
-                            ? 'bg-student-100 text-student-700 shadow-sm' 
-                            : 'text-slate-500 hover:bg-slate-50'
+                            ? 'bg-white border border-[#8C5A3C] text-student-600 shadow-md' 
+                            : 'text-slate-500 hover:text-slate-700'
                     }`}
                 >
                     Saved Drafts ({audits.length})
                 </button>
                 <button 
                     onClick={() => setActiveTab('submissions')}
-                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                    className={`flex-1 py-3 rounded-3xl text-sm font-bold transition-all ${
                         activeTab === 'submissions' 
-                            ? 'bg-student-100 text-student-700 shadow-sm' 
-                            : 'text-slate-500 hover:bg-slate-50'
+                            ? 'bg-white border border-[#8C5A3C] text-student-600 shadow-md' 
+                            : 'text-slate-500 hover:text-slate-700'
                     }`}
                 >
                     Final Submissions ({submissions.length})
@@ -133,8 +133,8 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                             );
                             
                             return (
-                                <div key={audit.id} className="bg-white p-4 rounded-lg shadow-sm border-2 border-[#FFE99A] flex flex-col sm:flex-row gap-4 hover:shadow-md transition-shadow">
-                                    <div className="w-full sm:w-24 h-24 bg-slate-100 rounded-md overflow-hidden flex-shrink-0 border border-[#D4C9BE]/20">
+                                <div key={audit.id} className="bg-white p-4 rounded-3xl shadow-sm border border-[#D4C9BE] flex flex-col sm:flex-row gap-4 hover:shadow-md transition-shadow">
+                                    <div className="w-full sm:w-24 h-24 bg-slate-100 rounded-2xl overflow-hidden flex-shrink-0 border border-[#D4C9BE]/20">
                                         <img src={audit.imageSrc} alt="Thumbnail" className="w-full h-full object-cover" />
                                     </div>
                                     <div className="flex-1">
@@ -173,8 +173,8 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                             );
                             
                             return (
-                                <div key={sub.id} className="bg-white p-4 rounded-lg shadow-sm border-2 border-[#B9D4AA] flex flex-col sm:flex-row gap-4">
-                                    <div className="w-full sm:w-24 h-24 bg-slate-100 rounded-md overflow-hidden flex-shrink-0 border border-[#D4C9BE]/20">
+                                <div key={sub.id} className="bg-white p-4 rounded-3xl shadow-sm border border-[#D4C9BE] flex flex-col sm:flex-row gap-4">
+                                    <div className="w-full sm:w-24 h-24 bg-slate-100 rounded-2xl overflow-hidden flex-shrink-0 border border-[#D4C9BE]/20">
                                         <img src={audit.imageSrc} alt="Thumbnail" className="w-full h-full object-cover" />
                                     </div>
                                     <div className="flex-1">
@@ -308,7 +308,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
             )}
           </div>
           
-          <div className="bg-white px-4 py-3 sm:px-6 flex justify-between items-center border-t border-[#D4C9BE]">
+          {/* <div className="bg-white px-4 py-3 sm:px-6 flex justify-between items-center border-t border-[#D4C9BE]">
             <p className="text-xs text-slate-400">Submissions are permanent and cannot be deleted.</p>
             <button
               type="button"
@@ -317,7 +317,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
             >
               Close
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

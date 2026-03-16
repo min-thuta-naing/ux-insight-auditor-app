@@ -19,6 +19,7 @@ import { logout as firebaseLogout } from '../services/authService';
 interface StudentJoinPageProps {
     user: User | null;
     studentName: string;
+    studentId: string;
     setAssignmentId: (id: string) => void;
     setAssignmentTitle: (title: string) => void;
     setProfessorId: (id: string) => void;
@@ -34,6 +35,7 @@ interface StudentJoinPageProps {
 export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
     user,
     studentName,
+    studentId,
     setAssignmentId,
     setAssignmentTitle,
     setProfessorId,
@@ -188,6 +190,26 @@ export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
         }
     };
 
+    const handleLoadSubmission = (audit: SavedAudit) => {
+        setSelectedImage(audit.imageSrc);
+        setReports(audit.reports);
+        setSelectedHeuristic(audit.heuristicMode);
+        setSelectedPersona(audit.persona);
+        setAuditScope(audit.auditScope || 'UX');
+        setWcagLevel(audit.wcagLevel || 'AA');
+        setIsHistoryOpen(false);
+        const targetId = audit.assignmentId;
+        console.log("Loading audit from join page. Target ID:", targetId);
+
+        if (targetId) {
+            navigate(`/student/submission-detail/${targetId}`);
+        } else {
+            console.error("Critical: Audit is missing assignmentId. Cannot navigate.");
+            alert("This submission is missing assignment data and cannot be viewed. Please contact support.");
+        }
+    };
+
+
     const handleDeleteAudit = async (id: string) => {
         if (user) {
             try {
@@ -211,6 +233,7 @@ export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
             <StudentHeader
                 user={user}
                 studentName={studentName}
+                studentId={studentId}
                 historyCount={savedAudits.length + submissionHistory.length}
                 onOpenHistory={() => setIsHistoryOpen(true)}
                 onOpenLogout={() => setIsLogoutConfirmOpen(true)}
@@ -327,8 +350,8 @@ export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
 
                                                     <div className="mt-auto">
                                                         <button 
-                                                            onClick={() => handleLoadAudit({ ...sub.auditData, assignmentId: sub.assignmentId })}
-                                                            className="text-sm font-black text-student-600 hover:text-slate-900 transition-colors flex items-center gap-1 hover:gap-2 transition-all uppercase tracking-tighter"
+                                                            onClick={() => handleLoadSubmission({ ...sub.auditData, assignmentId: sub.assignmentId })}
+                                                            className="text-sm font-black text-student-600 transition-colors flex items-center gap-1 hover:gap-2 transition-all uppercase tracking-tighter"
                                                         >
                                                             VIEW DETAILS <span className="text-lg">→</span>
                                                         </button>
@@ -459,9 +482,9 @@ export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
             {isLogoutConfirmOpen && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsLogoutConfirmOpen(false)} />
-                    <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl relative z-10 animate-in zoom-in slide-in-from-bottom-4 duration-300 border border-[#D4C9BE]">
-                        <div className="w-16 h-16 bg-red-50 rounded-xl flex items-center justify-center mb-6 mx-auto">
-                            <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl relative z-10 animate-in zoom-in slide-in-from-bottom-4 duration-300 border border-[#D4C9BE]">
+                        <div className="w-16 h-16 bg-[#F6ECF0] rounded-full border border-[#AF3E3E]/50 flex items-center justify-center mb-6 mx-auto">
+                            <svg className="w-8 h-8 text-[#AF3E3E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                             </svg>
                         </div>
@@ -470,13 +493,13 @@ export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
                         <div className="grid grid-cols-2 gap-4">
                             <button
                                 onClick={() => setIsLogoutConfirmOpen(false)}
-                                className="w-full py-4 px-6 bg-white text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all border border-[#D4C9BE]"
+                                className="w-full py-3 px-6 bg-white text-slate-600 font-bold rounded-3xl hover:bg-slate-50 transition-all border border-[#AF3E3E]/50"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleLogout}
-                                className="w-full py-4 px-6 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-200"
+                                className="w-full py-3 px-6 bg-[#F6ECF0] text-slate-600 font-bold rounded-3xl hover:bg-[#AF3E3E]/90 hover:text-white transition-all border border-[#AF3E3E]/50"
                             >
                                 Logout
                             </button>

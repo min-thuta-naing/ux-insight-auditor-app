@@ -22,7 +22,7 @@ import { HistoryModal } from '../components/HistoryModal';
 import { StudentHeader } from '../components/StudentHeader';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 
-interface AuditorPageProps {
+interface StudentSubmissionDetailPageProps {
     user: User | null;
     studentName: string;
     studentId: string;
@@ -48,7 +48,7 @@ interface AuditorPageProps {
     setWcagLevel: (l: WcagLevel) => void;
 }
 
-export const AuditorPage: React.FC<AuditorPageProps> = ({
+export const StudentSubmissionDetailPage: React.FC<StudentSubmissionDetailPageProps> = ({
     user,
     studentName,
     studentId,
@@ -164,200 +164,6 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
         fetchHistory();
     }, [user]);
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64String = reader.result as string;
-                setSelectedImage(base64String);
-                setReports([]);
-                setError(null);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleRunAudit = async () => {
-        if (!selectedImage) return;
-        setLoading(true);
-        setError(null);
-        setReports([]);
-        setProgressMessage("");
-        setShowUx(true);
-        setShowWcag(true);
-        setShowAllIssues(false); // Reset to default when running new audit
-
-        try {
-            const base64Data = selectedImage.split(',')[1];
-
-            if (selectedHeuristic === "ALL") {
-                const keys = Object.keys(HEURISTICS).sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)));
-                const newReports: UsabilityReport[] = [];
-
-                for (let i = 0; i < keys.length; i++) {
-                    const key = keys[i];
-                    const h = HEURISTICS[key];
-                    setProgressMessage(`Analyzing ${key}: ${h.name} (${i + 1}/${keys.length})...`);
-
-                    try {
-                        const currentScope = (auditScope === 'Inclusive' && i > 0) ? 'UX' : auditScope;
-                        const result = await analyzeImage(base64Data, h, selectedPersona, currentScope, wcagLevel);
-                        result.findings = result.findings.map(f => ({
-                            ...f,
-                            id: `${key}-${f.id}`,
-                            heuristic_id: key
-                        }));
-                        newReports.push(result);
-                        setReports([...newReports]);
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    } catch (err) {
-                        console.error(`Error auditing ${key}`, err);
-                    }
-                }
-            } else {
-                setProgressMessage(`Analyzing ${HEURISTICS[selectedHeuristic].name}...`);
-                const heuristic = HEURISTICS[selectedHeuristic];
-                const result = await analyzeImage(base64Data, heuristic, selectedPersona, auditScope, wcagLevel);
-                result.findings = result.findings.map(f => ({ ...f, heuristic_id: selectedHeuristic }));
-                setReports([result]);
-            }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to analyze image");
-        } finally {
-            setLoading(false);
-            setProgressMessage("");
-        }
-    };
-    
-    const calculateAnalytics = () => {
-        const vCounts: ViolationCounts = {};
-        const sCounts: SeverityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
-        
-        reports.forEach(report => {
-            report.findings.forEach(finding => {
-                const hId = finding.heuristic_id || report.heuristic_id;
-                vCounts[hId] = (vCounts[hId] || 0) + 1;
-                if (finding.severity in sCounts) {
-                    sCounts[finding.severity as keyof SeverityCounts]++;
-                }
-            });
-        });
-        
-        return { violationCounts: vCounts, severityCounts: sCounts };
-    };
-
-    const handleSaveDraft = async () => {
-        if (!selectedImage || reports.length === 0 || !user) return;
-        try {
-            const { violationCounts, severityCounts } = calculateAnalytics();
-            
-            const draftData: Omit<SavedAudit, "id"> = {
-                timestamp: Date.now(),
-                imageSrc: selectedImage,
-                reports: reports,
-                heuristicMode: selectedHeuristic,
-                persona: selectedPersona,
-                auditScope: auditScope,
-                wcagLevel: wcagLevel,
-                assignmentId: assignmentId,
-                violationCounts,
-                severityCounts
-            };
-            
-            console.log("Saving draft with assignmentId:", assignmentId);
-
-            await saveDraft(user.uid, draftData);
-            const drafts = await getDrafts(user.uid);
-            setSavedAudits(drafts);
-            showToast("Draft saved successfully!", "success", "You can view and resume your drafts from 'My History'.");
-        } catch (err) {
-            showToast("Failed to save draft", "error", err instanceof Error ? err.message : "Please try again.");
-        }
-    };
-
-    const handleSubmitAssignment = async () => {
-        if (!selectedImage || reports.length === 0) return;
-        
-        if (assignmentStatus === 'closed') {
-            showToast("Submissions Closed", "error", `Round ${roundNumber} is currently closed by the instructor.`);
-            return;
-        }
-
-        if (roundNumber > profCurrentRound) {
-            showToast("Wait for Next Round", "info", `The instructor hasn't started Round ${roundNumber} yet.`);
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const { violationCounts, severityCounts } = calculateAnalytics();
-
-            const auditData: SavedAudit = {
-                id: Date.now().toString(),
-                timestamp: Date.now(),
-                imageSrc: selectedImage,
-                reports: reports,
-                heuristicMode: selectedHeuristic,
-                persona: selectedPersona,
-                auditScope: auditScope,
-                wcagLevel: wcagLevel,
-                assignmentId: assignmentId,
-                violationCounts,
-                severityCounts
-            };
-
-            const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-            const refCode = `UX-${randomSuffix}`;
-
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let sessionCode = '';
-            for (let i = 0; i < 6; i++) {
-                sessionCode += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-
-            // Upload to Cloudinary first
-            setProgressMessage("Uploading image to Cloudinary...");
-            const imageUrl = await uploadImageToCloudinary(selectedImage);
-            setProgressMessage("Submitting to database...");
-
-            const auditDataWithUrl: SavedAudit = {
-                ...auditData,
-                imageSrc: imageUrl,
-                assignmentId: assignmentId
-            };
-
-            const submission = {
-                refCode,
-                studentName,
-                studentId,
-                studentUid: user?.uid || "",
-                assignmentId,
-                professorId,
-                timestamp: Date.now(),
-                auditData: auditDataWithUrl,
-                violationCounts,
-                severityCounts,
-                roundNumber,
-                sessionCode
-            };
-
-            const savedSubmission = await submitToFirestore(submission);
-            setLastSubmission(savedSubmission as StudentSubmission);
-            navigate('/student/success');
-
-            // Refresh history
-            if (user) {
-                const submissions = await getSubmissionsByStudent(user.uid);
-                setSubmissionHistory(submissions);
-            }
-        } catch (err) {
-            showToast("Submission failed", "error", err instanceof Error ? err.message : "Failed to submit assignment.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleLoadAudit = (audit: SavedAudit) => {
         setSelectedImage(audit.imageSrc);
         setReports(audit.reports);
@@ -458,79 +264,52 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
 
             <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
                 <div className="bg-white rounded-3xl shadow-sm border border-[#D4C9BE] p-6 mb-8">
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-                        <div className="col-span-1 md:col-span-4">
-                            <label className="block text-sm font-medium text-slate-700 mb-2">1. Upload UI Screenshot</label>
-                            <input type="file" accept="image/*" onChange={handleImageUpload} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer" />
-                        </div>
-
-                        <div className="col-span-1 md:col-span-2">
-                            <label className="block text-sm font-medium text-slate-700 mb-2">2. Scope</label>
-                            <select value={auditScope} onChange={(e) => setAuditScope(e.target.value as AuditScope)} className="block w-full rounded-md border-slate-300 py-2 pl-3 pr-8 text-base focus:border-student-500 focus:outline-none focus:ring-student-500 sm:text-sm bg-slate-50 border">
-                                <option value="UX">UX Only</option>
-                                <option value="Inclusive">Inclusive (UX + WCAG)</option>
-                            </select>
-                        </div>
-
-                        {auditScope === 'Inclusive' && (
-                            <div className="col-span-1 md:col-span-2">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">WCAG Level</label>
-                                <select value={wcagLevel} onChange={(e) => setWcagLevel(e.target.value as WcagLevel)} className="block w-full rounded-md border-slate-300 py-2 pl-3 pr-8 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm bg-slate-50 border">
-                                    <option value="A">Level A</option>
-                                    <option value="AA">Level AA</option>
-                                    <option value="AAA">Level AAA</option>
-                                </select>
+                    <div className="mt-2 flex flex-wrap items-center justify-between py-5 px-10 bg-slate-50/50 rounded-2xl border border-slate-100/80">
+                        {/* Round Indicator */}
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm shadow-indigo-100/50 border border-indigo-100/50">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
+                                </svg>
                             </div>
-                        )}
-
-                        <div className="col-span-1 md:col-span-2">
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Target Persona</label>
-                            <select value={selectedPersona} onChange={(e) => setSelectedPersona(e.target.value as Persona)} className="block w-full rounded-md border-slate-300 py-2 pl-3 pr-8 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm bg-slate-50 border">
-                                <option value="General Public">General Public</option>
-                                <option value="Elderly/Novice">Elderly / Novice</option>
-                                <option value="Developer/Expert">Developer / Expert</option>
-                            </select>
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Current Round</p>
+                                <p className="text-sm font-bold text-indigo-900 leading-none">
+                                    {roundNumber > profCurrentRound ? `Waiting for Round ${roundNumber}` : `Round ${roundNumber} of ${roundsCount}`}
+                                </p>
+                            </div>
                         </div>
 
-                        <div className={`col-span-1 ${auditScope === 'Inclusive' ? 'md:col-span-2' : 'md:col-span-4'}`}>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">3. Heuristic / Rule</label>
-                            <select value={selectedHeuristic} onChange={(e) => setSelectedHeuristic(e.target.value)} className="block w-full rounded-md border-slate-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm bg-slate-50 border">
-                                <option value="ALL">✨ Full Audit (H1-H10)</option>
-                                <option disabled>──────────</option>
-                                {Object.values(HEURISTICS).map((h) => (
-                                    <option key={h.id} value={h.id}>{h.id}: {h.name}</option>
-                                ))}
-                            </select>
+                        {/* Status Indicator */}
+                        <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm border ${assignmentStatus === 'open' ? 'bg-emerald-50 text-emerald-600 shadow-emerald-100/50 border-emerald-100/50' : 'bg-rose-50 text-rose-600 shadow-rose-100/50 border-rose-100/50'}`}>
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    {assignmentStatus === 'open' 
+                                        ? <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 00-2.25 2.25z" />
+                                        : <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                    }
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Round Status</p>
+                                <p className={`text-sm font-bold leading-none ${assignmentStatus === 'open' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                    {assignmentStatus === 'open' ? 'Submissions Open' : 'Submissions Closed'}
+                                </p>
+                            </div>
                         </div>
 
-                        <div className="col-span-1 md:col-span-12 mt-4">
-                            <button onClick={handleRunAudit} disabled={!selectedImage || loading} className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-3xl shadow-sm text-sm font-medium text-white ${!selectedImage || loading ? 'bg-student-200 cursor-not-allowed' : 'bg-student-500 hover:bg-student-600'} transition-colors duration-200`}>
-                                {loading ? (
-                                    <span className="flex items-center">
-                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                        {progressMessage || 'Auditing...'}
-                                    </span>
-                                ) : 'Run Audit'}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-between text-[11px] font-bold uppercase tracking-widest">
-                        <div className="flex items-center gap-2">
-                            <span className={`${roundNumber > profCurrentRound ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-student-100 text-student-700 border-student-200'} px-2 py-0.5 rounded-md border text-[10px]`}>
-                                {roundNumber > profCurrentRound ? `Waiting for Round ${roundNumber}` : `Round ${roundNumber} of ${roundsCount}`}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-slate-400">Round Status:</span>
-                            <span className={`${assignmentStatus === 'open' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'} px-2 py-0.5 rounded-md border text-[10px]`}>
-                                {assignmentStatus.toUpperCase()}
-                            </span>
-                        </div>
+                        {/* Verification Indicator */}
                         {roundNumber > 1 && (
-                            <div className="text-green-600 flex items-center gap-1">
-                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                                Session Verified
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-2xl bg-violet-50 flex items-center justify-center text-violet-600 shadow-sm shadow-violet-100/50 border border-violet-100/50">
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Verification</p>
+                                    <p className="text-sm font-bold text-violet-900 leading-none">Session Secured</p>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -614,16 +393,7 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
 
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-lg font-bold text-slate-800">Analysis Report</h3>
-                                        <div className="flex gap-2">
-                                            <button onClick={handleSaveDraft} className="text-xs font-semibold text-student-700 bg-student-100 hover:bg-student-200 border border-student-200 px-3 py-1.5 rounded-md flex items-center gap-1 shadow-sm transition-colors">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                                                Save Draft
-                                            </button>
-                                            <button onClick={handleSubmitAssignment} className="text-xs font-semibold text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-md flex items-center gap-1 shadow-sm transition-colors">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                Submit Assignment
-                                            </button>
-                                        </div>
+                                        
                                     </div>
 
                                     <div className="space-y-6">

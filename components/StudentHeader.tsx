@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 interface StudentHeaderProps {
     user: User | null;
     studentName: string;
+    studentId: string;
     historyCount: number;
     onOpenHistory: () => void;
     onOpenLogout: () => void;
@@ -13,6 +14,7 @@ interface StudentHeaderProps {
 export const StudentHeader: React.FC<StudentHeaderProps> = ({
     user,
     studentName,
+    studentId,
     historyCount,
     onOpenHistory,
     onOpenLogout
@@ -23,7 +25,7 @@ export const StudentHeader: React.FC<StudentHeaderProps> = ({
         /* HEADER COLOR: You can change the background color below (e.g., bg-white) */
         <header className="bg-[#F9F8F6] sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+                <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/student/join')}>
                     {/* <div className="w-8 h-8 bg-indigo-600 rounded-md flex items-center justify-center text-white font-bold">UX</div> */}
                     <h1 className="text-2xl font-bold text-slate-800">UX Insight Auditor</h1>
                 </div>
@@ -31,8 +33,8 @@ export const StudentHeader: React.FC<StudentHeaderProps> = ({
                     {studentName || user ? (
                         <div className="flex items-center gap-3">
                             <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-700 rounded-full border border-[#8C5A3C] shadow-sm">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-[#030303]/50">Student</span>
-                                <span className="text-sm font-bold border-l border-[#8C5A3C]/70 pl-2">{studentName || user?.displayName || 'Student'}</span>
+                                <span className="text-sm font-bold">{studentName || user?.displayName || 'Student'}</span>
+                                <span className="text-sm font-bold border-l border-[#8C5A3C]/70 pl-2">{studentId || 'ID'}</span>
                             </div>
 
                             {/* History Button (Green) */}
