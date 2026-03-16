@@ -11,6 +11,7 @@ import { LandingPage } from './pages/LandingPage';
 import { StudentJoinPage } from './pages/StudentJoinPage';
 import { AuditorPage } from './pages/AuditorPage';
 import { SubmissionSuccessPage } from './pages/SubmissionSuccessPage';
+
 import { ProfessorLoginPage } from './pages/ProfessorLoginPage';
 import { ProfessorDashboardPage } from './pages/ProfessorDashboardPage';
 import { ProfessorAssignmentsPage } from './pages/ProfessorAssignmentsPage';
@@ -18,13 +19,16 @@ import { ProfessorProfilePage } from './pages/ProfessorProfilePage';
 import { ProfessorSubmissionDetailPage } from './pages/ProfessorSubmissionDetailPage';
 import { ProfessorLayout } from './pages/ProfessorLayout';
 import { ProfessorLandingPage } from './pages/ProfessorLandingPage';
+
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { VerifyEmailPage } from './components/VerifyEmailPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
+
 import { StudentLoginPage } from './pages/StudentLoginPage';
 import { StudentSignupPage } from './pages/StudentSignupPage';
 import { StudentProfilePage } from './pages/StudentProfilePage';
 import { StudentSubmissionDetailPage } from './pages/StudentSubmissionDetailPage';
+
 import { ToastProvider } from './components/Toast';
 
 const App: React.FC = () => {
@@ -294,6 +298,8 @@ const App: React.FC = () => {
         <Route path="/student/signup" element={
           <StudentSignupPage />
         } />
+
+<Route path="/instructor-auth-research-2026/pending" element={<Navigate to="/instructor-auth-research-2026/login" replace />} />
 
         <Route path="/student/profile" element={
           <ProtectedRoute user={user} loading={authLoading} requiredRole="student">

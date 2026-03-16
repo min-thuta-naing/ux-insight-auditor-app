@@ -255,6 +255,7 @@ export const updateProfessorProfile = async (profile: ProfessorProfile) => {
     return cleaned;
 };
 
+
 /**
  * Fetches a student's profile by UID
  */

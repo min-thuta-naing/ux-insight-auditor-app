@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { User } from 'firebase/auth';
 import { getProfessorProfile, getStudentProfile } from '../services/firestoreService';
 import { logout } from '../services/authService';
+import { ProfessorProfile } from '../types';
 
 interface ProtectedRouteProps {
     user: User | null;
@@ -15,7 +16,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, loading, r
     const location = useLocation();
     const [isVerifying, setIsVerifying] = useState(true);
     const [isAuthorized, setIsAuthorized] = useState(false);
-
     useEffect(() => {
         const verifyRole = async () => {
             if (!user) {
