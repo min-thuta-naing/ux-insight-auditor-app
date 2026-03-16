@@ -159,10 +159,10 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
     };
 
     return (
-        <div className="w-full max-w-md mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-100">
+        <div className={`w-full max-w-md mx-auto bg-white rounded-[2.5rem] shadow-xl overflow-hidden border ${role === 'student' ? 'border-[#8C5A3C]' : 'border-slate-100'}`}>
             <div className="p-8">
                 <div className="text-center mb-8">
-                    <h2 className="text-3xl font-extrabold text-slate-900">
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">
                         {mode === 'login' ? "Welcome Back" : mode === 'signup' ? "Create Account" : "Reset Password"}
                     </h2>
                     <p className="text-slate-500 mt-2">
@@ -174,7 +174,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Email Address</label>
                         <div className="relative">
                             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -186,7 +186,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className={`w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 ${role === 'student' ? 'focus:ring-student-500 focus:border-student-500' : 'focus:ring-indigo-500 focus:border-indigo-500'} outline-none transition-all`}
+                                className={`w-full pl-10 pr-4 py-4 bg-slate-50 border-2 ${role === 'student' ? 'border-[#D4C9BE] rounded-3xl focus:ring-4 focus:ring-student-500/10 focus:border-student-500' : 'border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'} outline-none transition-all placeholder:text-slate-300`}
                                 placeholder="name@example.com"
                             />
                         </div>
@@ -196,47 +196,47 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                         <>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">First Name</label>
+                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">First Name</label>
                                     <input
                                         type="text"
                                         required
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
-                                        className={`w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 ${role === 'student' ? 'focus:ring-student-500 focus:border-student-500' : 'focus:ring-indigo-500 focus:border-indigo-500'} outline-none transition-all`}
+                                        className="w-full px-4 py-4 bg-slate-50 border-2 border-[#D4C9BE] rounded-3xl focus:ring-4 focus:ring-student-500/10 focus:border-student-500 outline-none transition-all placeholder:text-slate-300"
                                         placeholder="John"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Last Name</label>
+                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Last Name</label>
                                     <input
                                         type="text"
                                         required
                                         value={lastName}
                                         onChange={(e) => setLastName(e.target.value)}
-                                        className={`w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 ${role === 'student' ? 'focus:ring-student-500 focus:border-student-500' : 'focus:ring-indigo-500 focus:border-indigo-500'} outline-none transition-all`}
+                                        className="w-full px-4 py-4 bg-slate-50 border-2 border-[#D4C9BE] rounded-3xl focus:ring-4 focus:ring-student-500/10 focus:border-student-500 outline-none transition-all placeholder:text-slate-300"
                                         placeholder="Doe"
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Student ID</label>
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Student ID</label>
                                 <input
                                     type="text"
                                     required
                                     value={studentId}
                                     onChange={(e) => setStudentId(e.target.value)}
-                                    className={`w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 ${role === 'student' ? 'focus:ring-student-500 focus:border-student-500' : 'focus:ring-indigo-500 focus:border-indigo-500'} outline-none transition-all`}
+                                    className="w-full px-4 py-4 bg-slate-50 border-2 border-[#D4C9BE] rounded-3xl focus:ring-4 focus:ring-student-500/10 focus:border-student-500 outline-none transition-all placeholder:text-slate-300"
                                     placeholder="65XXXXXXXX"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Institution Name</label>
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Institution Name</label>
                                 <input
                                     type="text"
                                     required
                                     value={institutionName}
                                     onChange={(e) => setInstitutionName(e.target.value)}
-                                    className={`w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 ${role === 'student' ? 'focus:ring-student-500 focus:border-student-500' : 'focus:ring-indigo-500 focus:border-indigo-500'} outline-none transition-all`}
+                                    className="w-full px-4 py-4 bg-slate-50 border-2 border-[#D4C9BE] rounded-3xl focus:ring-4 focus:ring-student-500/10 focus:border-student-500 outline-none transition-all placeholder:text-slate-300"
                                     placeholder="e.g. Stanford University"
                                 />
                             </div>
@@ -245,13 +245,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
 
                     {mode !== 'reset' && (
                         <div>
-                            <div className="flex justify-between items-center mb-2">
-                                <label className="block text-sm font-semibold text-slate-700">Password</label>
+                            <div className="flex justify-between items-center mb-3">
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">Password</label>
                                 {mode === 'login' && (
                                     <button
                                         type="button"
                                         onClick={() => setMode('reset')}
-                                        className={`text-xs ${role === 'student' ? 'text-student-600' : 'text-indigo-600'} hover:underline font-medium`}
+                                        className={`text-xs ${role === 'student' ? 'text-student-600' : 'text-indigo-600'} hover:underline font-bold`}
                                     >
                                         Forgot Password?
                                     </button>
@@ -271,9 +271,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                                         setPassword(e.target.value);
                                         if (mode === 'signup') validatePassword(e.target.value);
                                     }}
-                                    className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl outline-none transition-all ${mode === 'signup' && password.length > 0 && !isPasswordValid
-                                        ? 'border-red-400 focus:ring-2 focus:ring-red-500'
-                                        : `border-slate-200 focus:ring-2 ${role === 'student' ? 'focus:ring-student-500' : 'focus:ring-indigo-500'}`
+                                    className={`w-full pl-10 pr-4 py-4 bg-slate-50 border-2 outline-none transition-all placeholder:text-slate-300 ${role === 'student' ? 'rounded-3xl' : 'rounded-xl'} ${mode === 'signup' && password.length > 0 && !isPasswordValid
+                                        ? 'border-red-400 focus:ring-4 focus:ring-red-500/10'
+                                        : role === 'student' 
+                                            ? 'border-[#D4C9BE] focus:ring-4 focus:ring-student-500/10 focus:border-student-500' 
+                                            : 'border-slate-200 focus:ring-2 focus:ring-indigo-500'
                                         }`}
                                     placeholder="••••••••"
                                 />
@@ -369,11 +371,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                     <button
                         type="submit"
                         disabled={loading}
-                        className={`w-full py-3 px-4 rounded-xl text-white font-bold text-lg shadow-lg transform transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                        className={`w-full py-4 px-4 rounded-2xl text-white font-black text-lg shadow-xl transform transition-all hover:scale-[1.02] active:scale-[0.98] ${
                             loading 
-                                ? 'bg-slate-400 cursor-not-allowed' 
+                                ? 'bg-slate-200 cursor-not-allowed shadow-none' 
                                 : role === 'student' 
-                                    ? 'bg-student-100 text-student-700 hover:bg-student-200 border border-student-200' 
+                                    ? 'bg-student-600 hover:bg-student-700 shadow-student-200/50' 
                                     : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700'
                         }`}
                     >
@@ -386,7 +388,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onBack, initialMo
                                 {mode === 'reset' ? 'Sending...' : 'Authenticating...'}
                             </span>
                         ) : (
-                            mode === 'login' ? "Sign In" : mode === 'signup' ? (isPasswordValid ? "Get Started" : "Check Requirements") : "Send Reset Link"
+                            mode === 'login' ? "Sign In" : mode === 'signup' ? (isPasswordValid ? "Get Started" : "Sign Up") : "Send Reset Link"
                         )}
                     </button>
                 </form>
