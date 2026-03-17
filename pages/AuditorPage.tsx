@@ -550,8 +550,8 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                         <div className="col-span-1 md:col-span-12 mt-4">
                             <button
                                 onClick={handleRunAudit}
-                                disabled={!selectedImage || loading || auditUsageCount >= maxAudits}
-                                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-3xl shadow-sm text-sm font-medium text-white ${!selectedImage || loading || auditUsageCount >= maxAudits ? 'bg-student-200 cursor-not-allowed' : 'bg-student-500 hover:bg-student-600'} transition-colors duration-200`}
+                                disabled={!selectedImage || selectedImage === "" || loading || auditUsageCount >= maxAudits}
+                                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-3xl shadow-sm text-sm font-medium text-white ${(!selectedImage || selectedImage === "" || loading || auditUsageCount >= maxAudits) ? 'bg-slate-300 cursor-not-allowed opacity-60' : 'bg-student-500 hover:bg-student-600'} transition-all duration-200`}
                             >
                                 {loading ? (
                                     <span className="flex items-center">
@@ -596,7 +596,7 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                     </div>
                 )}
 
-                {selectedImage && (
+                {selectedImage && selectedImage !== "" && (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                         <div className="lg:col-span-7 space-y-4">
                             <div className="bg-white rounded-3xl shadow-sm border border-[#D4C9BE] p-4 sticky top-24">

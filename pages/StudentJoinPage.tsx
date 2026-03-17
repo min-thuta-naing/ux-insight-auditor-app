@@ -78,8 +78,11 @@ export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
         setAssignmentId(assignment.id);
         setAssignmentTitle(assignment.title);
         setProfessorId(assignment.professorId);
+        // Clear previous remnants
+        setSelectedImage(null);
+        setReports([]);
         navigate(`/student/auditor/${assignment.id}`);
-    }, [setAssignmentId, setAssignmentTitle, setProfessorId, navigate]);
+    }, [setAssignmentId, setAssignmentTitle, setProfessorId, setSelectedImage, setReports, navigate]);
 
     const handleJoinNew = async (e: React.FormEvent) => {
         e.preventDefault();

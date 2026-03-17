@@ -39,8 +39,8 @@ const AUDIT_USAGE_COLLECTION = "audit_usage";
 const WORDS = [
     "RIVER", "OCEAN", "LAKE", "POND", "SHORE", "WAVE", "TIDE", "REEF",
     "STONE", "ROCK", "CLIFF", "SAND", "DUNE", "CAVE", "PEAK", "RIDGE", "PLAIN", "FIELD",
-    "GRASS", "LEAF", "MOSS", "FERN", "BLOOM", "BUD", "SEED", "VINE", "ROOT", "BARK",
-    "FLORA", "FAUNA", "HERB", "TREE", "WOOD", "GROVE", "BRUSH", "WEED", "THORN",
+    "GRASS", "LEAF", "MOSS", "FERN", "BLOOM", "BUD", "SEED", "VINE", "ROOT", 
+    "FLORA", "FAUNA", "HERB", "TREE", "WOOD", "GROVE", "BRUSH", "THORN",
     "CLOUD", "STORM", "RAIN", "WIND", "MIST", "SNOW", "FROST",
     "EMBER", "FLAME", "GLOW", "SPARK", "DUST", "SHADE", "LIGHT", "AURORA"
 ];
