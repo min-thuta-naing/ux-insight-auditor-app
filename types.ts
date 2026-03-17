@@ -67,6 +67,7 @@ export interface SavedAudit {
   auditScope: AuditScope;
   wcagLevel: WcagLevel;
   assignmentId: string;
+  roundNumber?: number; // Tracks which round this draft belongs to
   violationCounts?: ViolationCounts;
   severityCounts?: SeverityCounts;
 }
@@ -85,6 +86,7 @@ export interface Assignment {
   currentRound: number; // The latest round number
   roundStatus: 'open' | 'closed'; // Status of the currentRound
   roundStatuses?: { [roundNumber: string]: 'open' | 'closed' }; // Status for each round
+  roundMaxAudits?: { [roundNumber: string]: number }; // Max audits allowed per round
 }
 
 export interface StudentSubmission {

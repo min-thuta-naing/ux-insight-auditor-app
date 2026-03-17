@@ -11,6 +11,7 @@ import { LandingPage } from './pages/LandingPage';
 import { StudentJoinPage } from './pages/StudentJoinPage';
 import { AuditorPage } from './pages/AuditorPage';
 import { SubmissionSuccessPage } from './pages/SubmissionSuccessPage';
+import { StudentDraftDetailPage } from './pages/StudentDraftDetailPage';
 
 import { ProfessorLoginPage } from './pages/ProfessorLoginPage';
 import { ProfessorDashboardPage } from './pages/ProfessorDashboardPage';
@@ -50,14 +51,18 @@ const App: React.FC = () => {
   const [lastSubmission, setLastSubmission] = useState<StudentSubmission | null>(null);
 
   // --- Auditor State (Shared) ---
-  const [selectedImage, setSelectedImage] = useState<string | null>(() => localStorage.getItem('ux_selected_image'));
+  const [selectedImage, setSelectedImage] = useState<string | null>(() => {
+    return sessionStorage.getItem('ux_selected_image') || localStorage.getItem('ux_selected_image');
+  });
   const [selectedHeuristic, setSelectedHeuristic] = useState<string>(() => localStorage.getItem('ux_selected_heuristic') || "H8");
   const [selectedPersona, setSelectedPersona] = useState<Persona>(() => (localStorage.getItem('ux_selected_persona') as Persona) || "General Public");
   const [auditScope, setAuditScope] = useState<AuditScope>(() => (localStorage.getItem('ux_audit_scope') as AuditScope) || 'UX');
   const [wcagLevel, setWcagLevel] = useState<WcagLevel>(() => (localStorage.getItem('ux_wcag_level') as WcagLevel) || 'AA');
   const [reports, setReports] = useState<UsabilityReport[]>(() => {
-    const saved = localStorage.getItem('ux_reports');
-    return saved ? JSON.parse(saved) : [];
+    const sessionSaved = sessionStorage.getItem('ux_reports');
+    if (sessionSaved) return JSON.parse(sessionSaved);
+    const localSaved = localStorage.getItem('ux_reports');
+    return localSaved ? JSON.parse(localSaved) : [];
   });
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [savedAudits, setSavedAudits] = useState<SavedAudit[]>([]);
@@ -77,25 +82,45 @@ const App: React.FC = () => {
 
   // --- Persistence Sync ---
   useEffect(() => {
-    localStorage.setItem('ux_auth_mode', authMode);
-    localStorage.setItem('ux_student_name', studentName);
-    localStorage.setItem('ux_student_id', studentId);
-    localStorage.setItem('ux_assignment_code', assignmentCode);
-    localStorage.setItem('ux_assignment_id', assignmentId);
-    localStorage.setItem('ux_assignment_title', assignmentTitle);
-    localStorage.setItem('ux_professor_id', professorId);
-    if (selectedImage) localStorage.setItem('ux_selected_image', selectedImage);
-    else localStorage.removeItem('ux_selected_image');
-    localStorage.setItem('ux_selected_heuristic', selectedHeuristic);
-    localStorage.setItem('ux_selected_persona', selectedPersona);
-    localStorage.setItem('ux_audit_scope', auditScope);
-    localStorage.setItem('ux_wcag_level', wcagLevel);
-    localStorage.setItem('ux_reports', JSON.stringify(reports));
+    const safeSetItem = (key: string, value: string, isSession = false) => {
+      try {
+        if (isSession) sessionStorage.setItem(key, value);
+        else localStorage.setItem(key, value);
+      } catch (e) {
+        console.warn(`Failed to save ${key} to ${isSession ? 'session' : 'local'}Storage:`, e);
+      }
+    };
+
+    safeSetItem('ux_auth_mode', authMode);
+    safeSetItem('ux_student_name', studentName);
+    safeSetItem('ux_student_id', studentId);
+    safeSetItem('ux_assignment_code', assignmentCode);
+    safeSetItem('ux_assignment_id', assignmentId);
+    safeSetItem('ux_assignment_title', assignmentTitle);
+    safeSetItem('ux_professor_id', professorId);
+
+    if (selectedImage) {
+      safeSetItem('ux_selected_image', selectedImage, true);
+      // Remove from localStorage to free up space
+      localStorage.removeItem('ux_selected_image');
+    } else {
+      sessionStorage.removeItem('ux_selected_image');
+      localStorage.removeItem('ux_selected_image');
+    }
+
+    safeSetItem('ux_selected_heuristic', selectedHeuristic);
+    safeSetItem('ux_selected_persona', selectedPersona);
+    safeSetItem('ux_audit_scope', auditScope);
+    safeSetItem('ux_wcag_level', wcagLevel);
+
+    safeSetItem('ux_reports', JSON.stringify(reports), true);
+    // Remove from localStorage to free up space
+    localStorage.removeItem('ux_reports');
   }, [studentName, studentId, assignmentCode, assignmentId, assignmentTitle, professorId, selectedImage, reports, selectedHeuristic, selectedPersona, auditScope, wcagLevel, authMode]);
 
   useEffect(() => {
     setSavedAudits(getSavedAudits());
-    
+
     const loadData = async () => {
       if (user) {
         // Try to load student profile if it exists
@@ -128,7 +153,9 @@ const App: React.FC = () => {
     setAuditScope(audit.auditScope || 'UX');
     setWcagLevel(audit.wcagLevel || 'AA');
     setIsHistoryOpen(false);
-    navigate('/student/auditor');
+
+    // Navigate to dedicated draft view instead of active auditor
+    navigate(`/student/draft-detail/${audit.id}`);
   };
 
   const handleDeleteAudit = (id: string) => {
@@ -270,6 +297,16 @@ const App: React.FC = () => {
           </ProtectedRoute>
         } />
 
+        <Route path="/student/draft-detail/:draftId" element={
+          <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
+            <StudentDraftDetailPage
+              user={user}
+              studentName={studentName}
+              studentId={studentId}
+            />
+          </ProtectedRoute>
+        } />
+
 
         <Route path="/student/success" element={
           <ProtectedRoute user={user} loading={authLoading} requiredRole="student">
@@ -299,7 +336,7 @@ const App: React.FC = () => {
           <StudentSignupPage />
         } />
 
-<Route path="/instructor-auth-research-2026/pending" element={<Navigate to="/instructor-auth-research-2026/login" replace />} />
+        <Route path="/instructor-auth-research-2026/pending" element={<Navigate to="/instructor-auth-research-2026/login" replace />} />
 
         <Route path="/student/profile" element={
           <ProtectedRoute user={user} loading={authLoading} requiredRole="student">

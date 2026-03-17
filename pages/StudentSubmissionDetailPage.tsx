@@ -5,11 +5,11 @@ import { HEURISTICS } from '../constants';
 import { HeuristicDef, Persona, UsabilityReport, SavedAudit, AuditScope, WcagLevel, StudentSubmission, ViolationCounts, SeverityCounts } from '../types';
 import { logout as firebaseLogout } from '../services/authService';
 import { analyzeImage } from '../services/geminiService';
-import { 
-    submitToFirestore, 
-    saveDraft, 
-    getDrafts, 
-    deleteDraft, 
+import {
+    submitToFirestore,
+    saveDraft,
+    getDrafts,
+    deleteDraft,
     getSubmissionsByStudent,
     getAssignmentById,
     getLatestSubmission
@@ -88,6 +88,7 @@ export const StudentSubmissionDetailPage: React.FC<StudentSubmissionDetailPagePr
     const [roundsCount, setRoundsCount] = useState(1);
     const [assignmentStatus, setAssignmentStatus] = useState<'open' | 'closed'>('open');
     const [profCurrentRound, setProfCurrentRound] = useState(1);
+    const [lastSubmissionData, setLastSubmissionData] = useState<StudentSubmission | null>(null);
 
     const { assignmentId: urlAssignmentId } = useParams<{ assignmentId: string }>();
 
@@ -130,14 +131,15 @@ export const StudentSubmissionDetailPage: React.FC<StudentSubmissionDetailPagePr
                     if (asg) {
                         setRoundsCount(asg.roundsCount || 1);
                         setProfCurrentRound(asg.currentRound || 1);
-                        
+
                         const latest = await getLatestSubmission(user.uid, assignmentId);
+                        setLastSubmissionData(latest);
                         const detected = latest ? latest.roundNumber + 1 : 1;
                         setRoundNumber(detected);
-                        
+
                         // Set status based on specific round number
-                        const specificStatus = (asg.roundStatuses && asg.roundStatuses[detected.toString()]) || 
-                                             (detected === asg.currentRound ? asg.roundStatus : 'closed');
+                        const specificStatus = (asg.roundStatuses && asg.roundStatuses[detected.toString()]) ||
+                            (detected === asg.currentRound ? asg.roundStatus : 'closed');
                         setAssignmentStatus(specificStatus);
                     }
                 } catch (err) {
@@ -165,27 +167,9 @@ export const StudentSubmissionDetailPage: React.FC<StudentSubmissionDetailPagePr
     }, [user]);
 
     const handleLoadAudit = (audit: SavedAudit) => {
-        setSelectedImage(audit.imageSrc);
-        setReports(audit.reports);
-        setSelectedHeuristic(audit.heuristicMode);
-        setSelectedPersona(audit.persona);
-        setAuditScope(audit.auditScope || 'UX');
-        setWcagLevel(audit.wcagLevel || 'AA');
         setIsHistoryOpen(false);
-        
-        const targetAssignmentId = audit.assignmentId || urlAssignmentId || assignmentId;
-        console.log("Loading audit. Audit ID:", audit.id, "Target Assignment ID:", targetAssignmentId);
-
-        // If loading a draft for a different assignment, navigate to its URL
-        if (targetAssignmentId && targetAssignmentId !== urlAssignmentId) {
-            console.log("Navigating to assignment:", targetAssignmentId);
-            navigate(`/student/auditor/${targetAssignmentId}`);
-        }
-        setError(null);
-        // Reset filters to ensure findings are visible
-        setShowUx(true);
-        setShowWcag(true);
-        setShowAllIssues(true);
+        // Navigate to dedicated draft view
+        navigate(`/student/draft-detail/${audit.id}`);
     };
 
     const handleDeleteAudit = async (id: string) => {
@@ -203,10 +187,10 @@ export const StudentSubmissionDetailPage: React.FC<StudentSubmissionDetailPagePr
     const handleSelectFinding = (id: string) => {
         setSelectedFindingId(prev => prev === id ? undefined : id);
     };
-    
+
     const handleLogout = async () => {
         setIsLogoutConfirmOpen(false);
-        navigate('/'); 
+        navigate('/');
         await firebaseLogout();
     };
 
@@ -269,31 +253,28 @@ export const StudentSubmissionDetailPage: React.FC<StudentSubmissionDetailPagePr
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm shadow-indigo-100/50 border border-indigo-100/50">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                             </div>
                             <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Current Round</p>
-                                <p className="text-sm font-bold text-indigo-900 leading-none">
-                                    {roundNumber > profCurrentRound ? `Waiting for Round ${roundNumber}` : `Round ${roundNumber} of ${roundsCount}`}
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Reference Code</p>
+                                <p className="text-sm font-bold text-indigo-900 leading-none font-mono">
+                                    {lastSubmissionData?.refCode || 'UX-XXXX'}
                                 </p>
                             </div>
                         </div>
 
                         {/* Status Indicator */}
                         <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm border ${assignmentStatus === 'open' ? 'bg-emerald-50 text-emerald-600 shadow-emerald-100/50 border-emerald-100/50' : 'bg-rose-50 text-rose-600 shadow-rose-100/50 border-rose-100/50'}`}>
+                            <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm shadow-emerald-100/50 border border-emerald-100/50">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    {assignmentStatus === 'open' 
-                                        ? <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 00-2.25 2.25z" />
-                                        : <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                                    }
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
                             </div>
                             <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Round Status</p>
-                                <p className={`text-sm font-bold leading-none ${assignmentStatus === 'open' ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                    {assignmentStatus === 'open' ? 'Submissions Open' : 'Submissions Closed'}
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Session Code</p>
+                                <p className="text-sm font-bold text-emerald-700 leading-none font-mono tracking-widest">
+                                    {lastSubmissionData?.sessionCode || '------'}
                                 </p>
                             </div>
                         </div>
@@ -393,7 +374,7 @@ export const StudentSubmissionDetailPage: React.FC<StudentSubmissionDetailPagePr
 
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-lg font-bold text-slate-800">Analysis Report</h3>
-                                        
+
                                     </div>
 
                                     <div className="space-y-6">

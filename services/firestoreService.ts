@@ -21,6 +21,7 @@ const SUBMISSIONS_COLLECTION = "submissions";
 const PROFESSORS_COLLECTION = "professors";
 const STUDENTS_COLLECTION = "students";
 const DRAFTS_COLLECTION = "drafts";
+const AUDIT_USAGE_COLLECTION = "audit_usage";
 
 
 // const WORDS = ["STUDY", "AUDIT", "DESIGN", "USER", "PLAN", "HEURISTIC", "UX", "RESEARCH", "TEST", "CHECK", "REVIEW", "FLOW", "BEHAVIOR", "BELIEVE", "ALPHA", "BETA", ];
@@ -88,7 +89,8 @@ export const createAssignment = async (assignment: Omit<Assignment, "id" | "crea
         roundsCount: 1,
         currentRound: 1,
         roundStatus: "open" as const,
-        roundStatuses: { "1": "open" as const }
+        roundStatuses: { "1": "open" as const },
+        roundMaxAudits: { "1": 2 }
     };
     const cleaned = cleanObject(newAssignment);
     const docRef = await addDoc(collection(db, ASSIGNMENTS_COLLECTION), cleaned);
@@ -100,7 +102,7 @@ export const createAssignment = async (assignment: Omit<Assignment, "id" | "crea
  */
 export const getAssignmentByCode = async (code: string): Promise<Assignment | null> => {
     let normalized = code.trim().toUpperCase();
-    
+
     // Help students who confuse zero '0' with letter 'O' in the word part
     if (normalized.includes('-')) {
         const [numPart, wordPart] = normalized.split('-');
@@ -186,19 +188,34 @@ export const updateRoundStatus = async (assignmentId: string, roundNumber: numbe
     const docRef = doc(db, ASSIGNMENTS_COLLECTION, assignmentId);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) return;
-    
+
     const data = docSnap.data() as Assignment;
     const statuses = data.roundStatuses || {};
     statuses[roundNumber.toString()] = status;
-    
+
     const updates: any = { roundStatuses: statuses };
-    
+
     // For backward compatibility and convenience if it's the latest round
     if (roundNumber === data.roundsCount) {
         updates.roundStatus = status;
     }
-    
+
     await updateDoc(docRef, updates);
+};
+
+/**
+ * Updates the max audits allowed for a specific round
+ */
+export const updateRoundMaxAudits = async (assignmentId: string, roundNumber: number, maxAudits: number) => {
+    const docRef = doc(db, ASSIGNMENTS_COLLECTION, assignmentId);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return;
+
+    const data = docSnap.data() as Assignment;
+    const roundMaxAudits = data.roundMaxAudits || {};
+    roundMaxAudits[roundNumber.toString()] = maxAudits;
+
+    await updateDoc(docRef, { roundMaxAudits });
 };
 
 /**
@@ -208,17 +225,18 @@ export const addNewRound = async (assignmentId: string) => {
     const docRef = doc(db, ASSIGNMENTS_COLLECTION, assignmentId);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) return;
-    
+
     const data = docSnap.data() as Assignment;
     const nextRound = (data.roundsCount || 1) + 1;
     const statuses = data.roundStatuses || {};
     statuses[nextRound.toString()] = "open";
-    
+
     await updateDoc(docRef, {
         roundsCount: nextRound,
         currentRound: nextRound,
         roundStatus: "open",
-        roundStatuses: statuses
+        roundStatuses: statuses,
+        roundMaxAudits: { ...(data.roundMaxAudits || {}), [nextRound.toString()]: 2 }
     });
 };
 
@@ -290,7 +308,7 @@ export const saveDraft = async (uid: string, draft: Omit<SavedAudit, "id"> & { i
         uid,
         updatedAt: Date.now()
     });
-    
+
     if (draft.id) {
         const docRef = doc(db, DRAFTS_COLLECTION, draft.id);
         await setDoc(docRef, data, { merge: true });
@@ -347,5 +365,40 @@ export const getLatestSubmission = async (studentUid: string, assignmentId: stri
     // Find the newest submission for this specific assignment
     // Since getSubmissionsByStudent already sorts by timestamp desc, we just find the first match
     return submissions.find(s => s.assignmentId === assignmentId) || null;
+};
+
+/**
+ * Fetches the audit usage count for a student in a specific round of an assignment
+ */
+export const getAuditUsage = async (studentUid: string, assignmentId: string, roundNumber: number): Promise<number> => {
+    const docId = `${studentUid}_${assignmentId}_${roundNumber}`;
+    const docRef = doc(db, AUDIT_USAGE_COLLECTION, docId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return docSnap.data().count || 0;
+    }
+    return 0;
+};
+
+/**
+ * Increments the audit usage count for a student in a specific round of an assignment
+ */
+export const incrementAuditUsage = async (studentUid: string, assignmentId: string, roundNumber: number) => {
+    const docId = `${studentUid}_${assignmentId}_${roundNumber}`;
+    const docRef = doc(db, AUDIT_USAGE_COLLECTION, docId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        const currentCount = docSnap.data().count || 0;
+        await updateDoc(docRef, { count: currentCount + 1, updatedAt: Date.now() });
+    } else {
+        await setDoc(docRef, {
+            studentUid,
+            assignmentId,
+            roundNumber,
+            count: 1,
+            updatedAt: Date.now()
+        });
+    }
 };
 

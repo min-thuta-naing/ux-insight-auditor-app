@@ -5,14 +5,16 @@ import { HEURISTICS } from '../constants';
 import { HeuristicDef, Persona, UsabilityReport, SavedAudit, AuditScope, WcagLevel, StudentSubmission, ViolationCounts, SeverityCounts } from '../types';
 import { logout as firebaseLogout } from '../services/authService';
 import { analyzeImage } from '../services/geminiService';
-import { 
-    submitToFirestore, 
-    saveDraft, 
-    getDrafts, 
-    deleteDraft, 
+import {
+    submitToFirestore,
+    saveDraft,
+    getDrafts,
+    deleteDraft,
     getSubmissionsByStudent,
     getAssignmentById,
-    getLatestSubmission
+    getLatestSubmission,
+    getAuditUsage,
+    incrementAuditUsage
 } from '../services/firestoreService';
 import { useToast } from '../components/Toast';
 import { uploadImageToCloudinary } from '../services/cloudinaryService';
@@ -88,6 +90,8 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
     const [roundsCount, setRoundsCount] = useState(1);
     const [assignmentStatus, setAssignmentStatus] = useState<'open' | 'closed'>('open');
     const [profCurrentRound, setProfCurrentRound] = useState(1);
+    const [auditUsageCount, setAuditUsageCount] = useState(0);
+    const [maxAudits, setMaxAudits] = useState(2);
 
     const { assignmentId: urlAssignmentId } = useParams<{ assignmentId: string }>();
 
@@ -130,15 +134,22 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                     if (asg) {
                         setRoundsCount(asg.roundsCount || 1);
                         setProfCurrentRound(asg.currentRound || 1);
-                        
+
                         const latest = await getLatestSubmission(user.uid, assignmentId);
                         const detected = latest ? latest.roundNumber + 1 : 1;
                         setRoundNumber(detected);
-                        
-                        // Set status based on specific round number
-                        const specificStatus = (asg.roundStatuses && asg.roundStatuses[detected.toString()]) || 
-                                             (detected === asg.currentRound ? asg.roundStatus : 'closed');
+
+                        const specificStatus = (asg.roundStatuses && asg.roundStatuses[detected.toString()]) ||
+                            (detected === asg.currentRound ? asg.roundStatus : 'closed');
                         setAssignmentStatus(specificStatus);
+
+                        // Fetch usage count
+                        const usage = await getAuditUsage(user.uid, assignmentId, detected);
+                        setAuditUsageCount(usage);
+
+                        // Set max audits for this round
+                        const roundLimit = asg.roundMaxAudits?.[detected.toString()] || 2;
+                        setMaxAudits(roundLimit);
                     }
                 } catch (err) {
                     console.error("Failed to detect round:", err);
@@ -167,12 +178,26 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // Check file size (4MB limit for browser storage safety)
+            if (file.size > 4 * 1024 * 1024) {
+                showToast("File Too Large", "error", "Please upload an image smaller than 4MB. Large images may cause browser performance issues.");
+                return;
+            }
+
             const reader = new FileReader();
             reader.onloadend = () => {
-                const base64String = reader.result as string;
-                setSelectedImage(base64String);
-                setReports([]);
-                setError(null);
+                try {
+                    const base64String = reader.result as string;
+                    setSelectedImage(base64String);
+                    setReports([]);
+                    setError(null);
+                } catch (err) {
+                    console.error("Error processing image:", err);
+                    showToast("Error", "error", "Failed to process image. It might be too large for the browser memory.");
+                }
+            };
+            reader.onerror = () => {
+                showToast("Error", "error", "Failed to read file.");
             };
             reader.readAsDataURL(file);
         }
@@ -180,6 +205,12 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
 
     const handleRunAudit = async () => {
         if (!selectedImage) return;
+
+        if (auditUsageCount >= maxAudits) {
+            showToast("Limit Reached", "error", `You have reached the limit of ${maxAudits} audits per round.`);
+            return;
+        }
+
         setLoading(true);
         setError(null);
         setReports([]);
@@ -227,13 +258,24 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
         } finally {
             setLoading(false);
             setProgressMessage("");
+
+            // Increment usage count after successful audit attempt
+            if (user && assignmentId && !error) {
+                try {
+                    await incrementAuditUsage(user.uid, assignmentId, roundNumber);
+                    const newUsage = await getAuditUsage(user.uid, assignmentId, roundNumber);
+                    setAuditUsageCount(newUsage);
+                } catch (err) {
+                    console.error("Failed to update audit usage:", err);
+                }
+            }
         }
     };
-    
+
     const calculateAnalytics = () => {
         const vCounts: ViolationCounts = {};
         const sCounts: SeverityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
-        
+
         reports.forEach(report => {
             report.findings.forEach(finding => {
                 const hId = finding.heuristic_id || report.heuristic_id;
@@ -243,42 +285,60 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                 }
             });
         });
-        
+
         return { violationCounts: vCounts, severityCounts: sCounts };
     };
 
     const handleSaveDraft = async () => {
         if (!selectedImage || reports.length === 0 || !user) return;
+
+        setLoading(true);
         try {
+            let finalImageUrl = selectedImage;
+
+            // If it's a base64 string, upload to Cloudinary first to avoid Firestore size limits
+            if (selectedImage.startsWith('data:image/')) {
+                setProgressMessage("Uploading image to Cloudinary...");
+                finalImageUrl = await uploadImageToCloudinary(selectedImage);
+            }
+
             const { violationCounts, severityCounts } = calculateAnalytics();
-            
+
             const draftData: Omit<SavedAudit, "id"> = {
                 timestamp: Date.now(),
-                imageSrc: selectedImage,
+                imageSrc: finalImageUrl,
                 reports: reports,
                 heuristicMode: selectedHeuristic,
                 persona: selectedPersona,
                 auditScope: auditScope,
                 wcagLevel: wcagLevel,
                 assignmentId: assignmentId,
+                roundNumber: roundNumber,
                 violationCounts,
                 severityCounts
             };
-            
+
             console.log("Saving draft with assignmentId:", assignmentId);
 
             await saveDraft(user.uid, draftData);
+
+            // Update local state so we don't upload the same image again if they click save twice
+            setSelectedImage(finalImageUrl);
+
             const drafts = await getDrafts(user.uid);
             setSavedAudits(drafts);
             showToast("Draft saved successfully!", "success", "You can view and resume your drafts from 'My History'.");
         } catch (err) {
             showToast("Failed to save draft", "error", err instanceof Error ? err.message : "Please try again.");
+        } finally {
+            setLoading(false);
+            setProgressMessage("");
         }
     };
 
     const handleSubmitAssignment = async () => {
         if (!selectedImage || reports.length === 0) return;
-        
+
         if (assignmentStatus === 'closed') {
             showToast("Submissions Closed", "error", `Round ${roundNumber} is currently closed by the instructor.`);
             return;
@@ -359,27 +419,11 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
     };
 
     const handleLoadAudit = (audit: SavedAudit) => {
-        setSelectedImage(audit.imageSrc);
-        setReports(audit.reports);
-        setSelectedHeuristic(audit.heuristicMode);
-        setSelectedPersona(audit.persona);
         setAuditScope(audit.auditScope || 'UX');
         setWcagLevel(audit.wcagLevel || 'AA');
         setIsHistoryOpen(false);
-        
-        const targetAssignmentId = audit.assignmentId || urlAssignmentId || assignmentId;
-        console.log("Loading audit. Audit ID:", audit.id, "Target Assignment ID:", targetAssignmentId);
-
-        // If loading a draft for a different assignment, navigate to its URL
-        if (targetAssignmentId && targetAssignmentId !== urlAssignmentId) {
-            console.log("Navigating to assignment:", targetAssignmentId);
-            navigate(`/student/auditor/${targetAssignmentId}`);
-        }
-        setError(null);
-        // Reset filters to ensure findings are visible
-        setShowUx(true);
-        setShowWcag(true);
-        setShowAllIssues(true);
+        // Navigate to dedicated draft view
+        navigate(`/student/draft-detail/${audit.id}`);
     };
 
     const handleDeleteAudit = async (id: string) => {
@@ -397,10 +441,10 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
     const handleSelectFinding = (id: string) => {
         setSelectedFindingId(prev => prev === id ? undefined : id);
     };
-    
+
     const handleLogout = async () => {
         setIsLogoutConfirmOpen(false);
-        navigate('/'); 
+        navigate('/');
         await firebaseLogout();
     };
 
@@ -504,13 +548,17 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                         </div>
 
                         <div className="col-span-1 md:col-span-12 mt-4">
-                            <button onClick={handleRunAudit} disabled={!selectedImage || loading} className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-3xl shadow-sm text-sm font-medium text-white ${!selectedImage || loading ? 'bg-student-200 cursor-not-allowed' : 'bg-student-500 hover:bg-student-600'} transition-colors duration-200`}>
+                            <button
+                                onClick={handleRunAudit}
+                                disabled={!selectedImage || loading || auditUsageCount >= maxAudits}
+                                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-3xl shadow-sm text-sm font-medium text-white ${!selectedImage || loading || auditUsageCount >= maxAudits ? 'bg-student-200 cursor-not-allowed' : 'bg-student-500 hover:bg-student-600'} transition-colors duration-200`}
+                            >
                                 {loading ? (
                                     <span className="flex items-center">
                                         <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                         {progressMessage || 'Auditing...'}
                                     </span>
-                                ) : 'Run Audit'}
+                                ) : auditUsageCount >= maxAudits ? `Audit Limit Reached (${maxAudits}/${maxAudits})` : `Run Audit (Credit Used: ${auditUsageCount}/${maxAudits})`}
                             </button>
                         </div>
                     </div>

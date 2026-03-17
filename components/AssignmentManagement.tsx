@@ -74,7 +74,7 @@ export const AssignmentManagement: React.FC<AssignmentManagementProps> = ({ prof
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Assignment Management</h1>
-                    <p className="text-slate-500 mt-1">Create and manage academic UX audit assessments</p>
+                    <p className="text-slate-600 mt-1 font-medium">Create and manage academic UX audit assessments</p>
                 </div>
                 <button
                     onClick={() => setShowModal(true)}
@@ -90,12 +90,12 @@ export const AssignmentManagement: React.FC<AssignmentManagementProps> = ({ prof
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
                 </div>
             ) : assignments.length === 0 ? (
-                <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-slate-300">
                     <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
                         <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012-2" /></svg>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-800 mb-2">No assignments yet</h3>
-                    <p className="text-slate-500 mb-8 max-w-sm mx-auto">Create your first assignment to start receiving student UX audit submissions.</p>
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">No assignments yet</h3>
+                    <p className="text-slate-600 mb-8 max-w-sm mx-auto font-medium">Create your first assignment to start receiving student UX audit submissions.</p>
                     <button
                         onClick={() => setShowModal(true)}
                         className="text-indigo-600 font-bold hover:underline py-2 px-4"
@@ -108,7 +108,7 @@ export const AssignmentManagement: React.FC<AssignmentManagementProps> = ({ prof
                     {assignments.map((asg) => (
                         <div
                             key={asg.id}
-                            className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-500 transition-all group flex flex-col h-full relative"
+                            className="bg-white p-6 rounded-2xl shadow-md border border-slate-300 hover:border-indigo-600 transition-all group flex flex-col h-full relative"
                         >
                             <button
                                 onClick={(e) => {
@@ -124,18 +124,18 @@ export const AssignmentManagement: React.FC<AssignmentManagementProps> = ({ prof
                             </button>
 
                             <div className="flex justify-between items-start mb-4 pr-8">
-                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${asg.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${asg.status === 'active' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
                                     {asg.status}
                                 </span>
-                                <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md font-mono font-bold border border-indigo-100">
+                                <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md font-mono font-bold border border-indigo-200">
                                     {asg.code}
                                 </span>
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">{asg.title}</h3>
-                            <p className="text-slate-500 text-sm line-clamp-2 mb-6 flex-1">{asg.description || 'No description provided.'}</p>
+                            <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-indigo-700 transition-colors">{asg.title}</h3>
+                            <p className="text-slate-600 text-sm line-clamp-2 mb-6 flex-1 font-medium">{asg.description || 'No description provided.'}</p>
                             <button
                                 onClick={() => onSelectAssignment(asg.id)}
-                                className="w-full py-2.5 bg-slate-50 text-slate-700 rounded-xl font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm group-hover:shadow-md"
+                                className="w-full py-2.5 bg-slate-100 text-slate-800 rounded-xl font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-slate-200 group-hover:shadow-md"
                             >
                                 View Dashboard
                             </button>

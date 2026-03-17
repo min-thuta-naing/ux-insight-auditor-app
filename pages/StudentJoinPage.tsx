@@ -172,22 +172,12 @@ export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
     };
 
     const handleLoadAudit = (audit: SavedAudit) => {
-        setSelectedImage(audit.imageSrc);
-        setReports(audit.reports);
-        setSelectedHeuristic(audit.heuristicMode);
-        setSelectedPersona(audit.persona);
         setAuditScope(audit.auditScope || 'UX');
         setWcagLevel(audit.wcagLevel || 'AA');
         setIsHistoryOpen(false);
-        const targetId = audit.assignmentId;
-        console.log("Loading audit from join page. Target ID:", targetId);
-
-        if (targetId) {
-            navigate(`/student/auditor/${targetId}`);
-        } else {
-            console.error("Critical: Audit is missing assignmentId. Cannot navigate.");
-            alert("This submission is missing assignment data and cannot be viewed. Please contact support.");
-        }
+        
+        // Navigate to dedicated draft view instead of active auditor
+        navigate(`/student/draft-detail/${audit.id}`);
     };
 
     const handleLoadSubmission = (audit: SavedAudit) => {
@@ -344,8 +334,8 @@ export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
                                                         {sub.auditData.heuristicMode === 'ALL' ? 'Full Heuristic Audit' : `${sub.auditData.heuristicMode} Audit`}
                                                     </h4>
                                                     <div className="flex items-center gap-2 mb-4">
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ref</span>
-                                                        <span className="text-xs font-mono font-bold text-slate-700">{sub.refCode}</span>
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Session Code for Next Round</span>
+                                                        <span className="text-xs font-mono font-bold text-slate-700">{sub.sessionCode}</span>
                                                     </div>
 
                                                     <div className="mt-auto">
