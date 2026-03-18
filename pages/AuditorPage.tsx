@@ -695,11 +695,19 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-lg font-bold text-slate-800">Analysis Report</h3>
                                         <div className="flex gap-2">
-                                            <button onClick={handleSaveDraft} className="text-xs font-semibold text-student-700 bg-student-100 hover:bg-student-200 border border-student-200 px-3 py-1.5 rounded-md flex items-center gap-1 shadow-sm transition-colors">
+                                            <button 
+                                                disabled={loading}
+                                                onClick={handleSaveDraft} 
+                                                className={`text-xs font-semibold px-3 py-1.5 rounded-md flex items-center gap-1 shadow-sm transition-colors ${loading ? 'opacity-50 cursor-not-allowed bg-slate-100 text-slate-400' : 'text-student-700 bg-student-100 hover:bg-student-200 border border-student-200'}`}
+                                            >
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
                                                 Save Draft
                                             </button>
-                                            <button onClick={handleSubmitAssignment} className="text-xs font-semibold text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-md flex items-center gap-1 shadow-sm transition-colors">
+                                            <button 
+                                                disabled={loading}
+                                                onClick={handleSubmitAssignment} 
+                                                className={`text-xs font-semibold text-white px-3 py-1.5 rounded-md flex items-center gap-1 shadow-sm transition-colors ${loading ? 'opacity-50 cursor-not-allowed bg-slate-400' : 'bg-green-600 hover:bg-green-700'}`}
+                                            >
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                                 Submit Assignment
                                             </button>
