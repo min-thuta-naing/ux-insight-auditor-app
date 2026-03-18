@@ -92,6 +92,7 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
     const [profCurrentRound, setProfCurrentRound] = useState(1);
     const [auditUsageCount, setAuditUsageCount] = useState(0);
     const [maxAudits, setMaxAudits] = useState(2);
+    const [countdown, setCountdown] = useState<number>(0);
 
     const { assignmentId: urlAssignmentId } = useParams<{ assignmentId: string }>();
 
@@ -160,6 +161,16 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
     }, [user, assignmentId]);
 
     useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (countdown > 0) {
+            timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+        }
+        return () => {
+            if (timer) clearTimeout(timer);
+        };
+    }, [countdown]);
+
+    useEffect(() => {
         const fetchHistory = async () => {
             if (user) {
                 try {
@@ -219,6 +230,7 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
         setShowWcag(true);
         setShowAllIssues(false); // Reset to default when running new audit
 
+        let rateLimited = false;
         try {
             const base64Data = selectedImage.split(',')[1];
 
@@ -244,6 +256,10 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     } catch (err) {
                         console.error(`Error auditing ${key}`, err);
+                        if ((err as Error)?.message === "RATE_LIMIT_EXCEEDED") {
+                            rateLimited = true;
+                            throw err; // Stop the loop and go to outer catch
+                        }
                     }
                 }
             } else {
@@ -254,13 +270,24 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                 setReports([result]);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to analyze image");
+            const errorMsg = err instanceof Error ? err.message : "Failed to analyze image";
+            if (errorMsg === "RATE_LIMIT_EXCEEDED") {
+                rateLimited = true;
+                showToast("API Busy", "info", "Google Gemini AI is busy. Please wait 10 seconds before trying again.");
+                setCountdown(10);
+                // Do not set error state so we can see the breakdown if some were successful (in case of ALL)
+                // But for a single audit, we might want to know it failed
+                if (selectedHeuristic !== "ALL") setError("API is currently busy. Please wait a few seconds.");
+            } else {
+                setError(errorMsg);
+            }
         } finally {
             setLoading(false);
             setProgressMessage("");
 
-            // Increment usage count after successful audit attempt
-            if (user && assignmentId && !error) {
+            // Increment usage count ONLY after successful audit AND if no rate limit occurred
+            // Error check is important here: we don't want to charge them if it failed
+            if (user && assignmentId && !error && !rateLimited) {
                 try {
                     await incrementAuditUsage(user.uid, assignmentId, roundNumber);
                     const newUsage = await getAuditUsage(user.uid, assignmentId, roundNumber);
@@ -550,13 +577,18 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                         <div className="col-span-1 md:col-span-12 mt-4">
                             <button
                                 onClick={handleRunAudit}
-                                disabled={!selectedImage || selectedImage === "" || loading || auditUsageCount >= maxAudits}
-                                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-3xl shadow-sm text-sm font-medium text-white ${(!selectedImage || selectedImage === "" || loading || auditUsageCount >= maxAudits) ? 'bg-slate-300 cursor-not-allowed opacity-60' : 'bg-student-500 hover:bg-student-600'} transition-all duration-200`}
+                                disabled={!selectedImage || selectedImage === "" || loading || auditUsageCount >= maxAudits || countdown > 0}
+                                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-3xl shadow-sm text-sm font-medium text-white ${(!selectedImage || selectedImage === "" || loading || auditUsageCount >= maxAudits || countdown > 0) ? 'bg-slate-300 cursor-not-allowed opacity-60' : 'bg-student-500 hover:bg-student-600'} transition-all duration-200`}
                             >
                                 {loading ? (
                                     <span className="flex items-center">
                                         <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                         {progressMessage || 'Auditing...'}
+                                    </span>
+                                ) : countdown > 0 ? (
+                                    <span className="flex items-center gap-2">
+                                        <svg className="w-4 h-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        API Busy - Wait {countdown}s...
                                     </span>
                                 ) : auditUsageCount >= maxAudits ? `Audit Limit Reached (${maxAudits}/${maxAudits})` : `Run Audit (Credit Used: ${auditUsageCount}/${maxAudits})`}
                             </button>

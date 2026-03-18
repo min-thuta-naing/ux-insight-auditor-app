@@ -113,9 +113,19 @@ export const analyzeImage = async (
       executive_summary: parsedData.executive_summary,
       findings: findingsWithIds
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini Analysis Error:", error);
-    throw new Error(error instanceof Error ? error.message : "Failed to analyze image with Gemini");
+    const errorMessage = error instanceof Error ? error.message : "Failed to analyze image with Gemini";
+    
+    // Check for rate limit / quota errors
+    if (errorMessage.toLowerCase().includes("429") || 
+        errorMessage.toLowerCase().includes("quota") || 
+        errorMessage.toLowerCase().includes("limit") ||
+        errorMessage.toLowerCase().includes("credit")) {
+      throw new Error("RATE_LIMIT_EXCEEDED");
+    }
+    
+    throw new Error(errorMessage);
   }
 };
 
