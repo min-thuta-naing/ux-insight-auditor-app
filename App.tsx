@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-
 import { Persona, UsabilityReport, SavedAudit, AuditScope, WcagLevel, StudentSubmission } from './types';
 import { getSavedAudits, deleteAudit } from './services/storageService';
 import { subscribeToAuthChanges } from './services/authService';
-import { getSubmissionsByAssignment, getAssignmentById, getStudentProfile } from './services/firestoreService';
+import { subscribeToSubmissions, subscribeToAssignment, getStudentProfile } from './services/firestoreService';
 import { User } from 'firebase/auth';
 
 // Page Components
@@ -120,6 +120,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     setSavedAudits(getSavedAudits());
+    let unsubscribeSubmissions: (() => void) | undefined;
+    let unsubscribeAssignment: (() => void) | undefined;
 
     const loadData = async () => {
       if (user) {
@@ -131,18 +133,27 @@ const App: React.FC = () => {
         }
 
         if (assignmentId) {
-          const subs = await getSubmissionsByAssignment(assignmentId);
-          setSubmissions(subs);
+          // Real-time submissions subscription
+          unsubscribeSubmissions = subscribeToSubmissions(assignmentId, (subs) => {
+            setSubmissions(subs);
+          });
 
-          const asg = await getAssignmentById(assignmentId);
-          if (asg) {
-            setAssignmentTitle(asg.title);
-            setAssignmentCode(asg.code);
-          }
+          // Real-time assignment subscription
+          unsubscribeAssignment = subscribeToAssignment(assignmentId, (asg) => {
+            if (asg) {
+              setAssignmentTitle(asg.title);
+              setAssignmentCode(asg.code);
+            }
+          });
         }
       }
     };
     loadData();
+
+    return () => {
+      if (unsubscribeSubmissions) unsubscribeSubmissions();
+      if (unsubscribeAssignment) unsubscribeAssignment();
+    };
   }, [user, assignmentId]);
 
   const handleLoadAudit = (audit: SavedAudit) => {

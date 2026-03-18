@@ -11,7 +11,8 @@ import {
     Timestamp,
     updateDoc,
     deleteDoc,
-    limit
+    limit,
+    onSnapshot
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { Assignment, StudentSubmission, ProfessorProfile, StudentProfile, SavedAudit } from "../types";
@@ -402,3 +403,38 @@ export const incrementAuditUsage = async (studentUid: string, assignmentId: stri
     }
 };
 
+/**
+ * Subscribes to submissions for a specific assignment in real-time
+ */
+export const subscribeToSubmissions = (assignmentId: string, callback: (submissions: StudentSubmission[]) => void) => {
+    const q = query(
+        collection(db, SUBMISSIONS_COLLECTION),
+        where("assignmentId", "==", assignmentId)
+    );
+    
+    return onSnapshot(q, (snapshot) => {
+        const submissions = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as StudentSubmission));
+        
+        // Sort in-memory to avoid composite index requirement
+        const sorted = submissions.sort((a, b) => b.timestamp - a.timestamp);
+        callback(sorted);
+    });
+};
+
+/**
+ * Subscribes to an assignment in real-time
+ */
+export const subscribeToAssignment = (assignmentId: string, callback: (assignment: Assignment | null) => void) => {
+    const docRef = doc(db, ASSIGNMENTS_COLLECTION, assignmentId);
+    
+    return onSnapshot(docRef, (snapshot) => {
+        if (snapshot.exists()) {
+            callback({ id: snapshot.id, ...snapshot.data() } as Assignment);
+        } else {
+            callback(null);
+        }
+    });
+};

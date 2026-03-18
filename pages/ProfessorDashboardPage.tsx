@@ -1,7 +1,7 @@
 import React from 'react';
 import { StudentSubmission, Assignment } from '../types';
 import { clearAllSubmissions } from '../services/storageService';
-import { getAssignmentById, updateRoundStatus, addNewRound, updateRoundMaxAudits } from '../services/firestoreService';
+import { subscribeToAssignment, updateRoundStatus, addNewRound, updateRoundMaxAudits } from '../services/firestoreService';
 import { useToast } from '../components/Toast';
 import { RoundConfirmationModal } from '../components/RoundConfirmationModal';
 
@@ -31,13 +31,15 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
     const [isConfirmModalOpen, setIsConfirmModalOpen] = React.useState(false);
 
     React.useEffect(() => {
-        const fetchAssignment = async () => {
-            if (assignmentId) {
-                const asg = await getAssignmentById(assignmentId);
+        let unsubscribe: (() => void) | undefined;
+        if (assignmentId) {
+            unsubscribe = subscribeToAssignment(assignmentId, (asg) => {
                 setAssignment(asg);
-            }
+            });
+        }
+        return () => {
+            if (unsubscribe) unsubscribe();
         };
-        fetchAssignment();
     }, [assignmentId]);
 
     const handleToggleStatus = async (rNum: number) => {
@@ -109,9 +111,7 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
         setUpdating(true);
         try {
             await addNewRound(assignmentId);
-            const updatedAsg = await getAssignmentById(assignmentId);
-            setAssignment(updatedAsg);
-            showToast(`Round ${updatedAsg?.currentRound} Created and Opened`, 'success');
+            showToast(`Round Created and Opened`, 'success');
         } catch (err) {
             showToast("Failed to add round", "error");
         } finally {
