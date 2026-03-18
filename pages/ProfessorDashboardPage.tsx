@@ -1,7 +1,8 @@
 import React from 'react';
 import { StudentSubmission, Assignment } from '../types';
 import { clearAllSubmissions } from '../services/storageService';
-import { subscribeToAssignment, updateRoundStatus, addNewRound, updateRoundMaxAudits } from '../services/firestoreService';
+import { subscribeToAssignment, updateRoundStatus, addNewRound, updateRoundMaxAudits, testFirestoreConnection } from '../services/firestoreService';
+import { testGeminiConnection } from '../services/geminiService';
 import { useToast } from '../components/Toast';
 import { RoundConfirmationModal } from '../components/RoundConfirmationModal';
 
@@ -29,6 +30,21 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
     const [updating, setUpdating] = React.useState(false);
     const [activeTab, setActiveTab] = React.useState(1);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = React.useState(false);
+    
+    // API Status State
+    const [geminiStatus, setGeminiStatus] = React.useState<'loading' | 'success' | 'error' | 'quota_exceeded'>('loading');
+    const [firestoreStatus, setFirestoreStatus] = React.useState<'loading' | 'success' | 'error'>('loading');
+
+    React.useEffect(() => {
+        const checkConnections = async () => {
+            const gStatus = await testGeminiConnection();
+            setGeminiStatus(gStatus ? 'success' : 'error');
+            
+            const fStatus = await testFirestoreConnection();
+            setFirestoreStatus(fStatus ? 'success' : 'error');
+        };
+        checkConnections();
+    }, []);
 
     React.useEffect(() => {
         let unsubscribe: (() => void) | undefined;
@@ -259,6 +275,28 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
                     <div className="flex items-center gap-3">
                         <h1 className="text-2xl font-bold text-slate-900">{assignmentTitle || 'Assignment Overview'}</h1>
                         <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-mono font-bold border border-indigo-200 uppercase tracking-widest">{assignmentCode}</span>
+                    </div>
+                    
+                    {/* API Status Indicators */}
+                    <div className="flex gap-4 items-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${
+                                geminiStatus === 'success' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 
+                                geminiStatus === 'quota_exceeded' ? 'bg-yellow-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' :
+                                geminiStatus === 'error' ? 'bg-red-500' : 'bg-slate-300 animate-pulse'
+                            }`} title={geminiStatus === 'quota_exceeded' ? "API Credit / Quota Exceeded" : ""} />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                {geminiStatus === 'quota_exceeded' ? 'Gemini (No Credit)' : 'Gemini AI'}
+                            </span>
+                        </div>
+                        <div className="w-px h-3 bg-slate-200" />
+                        <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${
+                                firestoreStatus === 'success' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 
+                                firestoreStatus === 'error' ? 'bg-red-500' : 'bg-slate-300 animate-pulse'
+                            }`} />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Firestore</span>
+                        </div>
                     </div>
                 </div>
 

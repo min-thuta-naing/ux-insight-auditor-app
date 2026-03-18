@@ -438,3 +438,17 @@ export const subscribeToAssignment = (assignmentId: string, callback: (assignmen
         }
     });
 };
+
+/**
+ * Tests the Firestore connection by attempting to read a single document from a collection
+ */
+export const testFirestoreConnection = async (): Promise<boolean> => {
+    try {
+        const q = query(collection(db, ASSIGNMENTS_COLLECTION), limit(1));
+        await getDocs(q);
+        return true;
+    } catch (error) {
+        console.error("Firestore Connection Test Failed:", error);
+        return false;
+    }
+};

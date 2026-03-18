@@ -118,3 +118,26 @@ export const analyzeImage = async (
     throw new Error(error instanceof Error ? error.message : "Failed to analyze image with Gemini");
   }
 };
+
+/**
+ * Tests the Gemini API connection with a minimal prompt
+ * Returns 'success', 'quota_exceeded', or 'error'
+ */
+export const testGeminiConnection = async (): Promise<'success' | 'quota_exceeded' | 'error'> => {
+  if (!API_KEY) return 'error';
+  
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+    const result = await model.generateContent("ping");
+    const text = result.response.text();
+    return text ? 'success' : 'error';
+  } catch (error: any) {
+    console.error("Gemini Connection Test Failed:", error);
+    const errorMessage = error?.message?.toLowerCase() || "";
+    // Check for both quota exhaustion (429) and credit-related failures
+    if (errorMessage.includes("429") || errorMessage.includes("quota") || errorMessage.includes("limit") || errorMessage.includes("credit")) {
+      return 'quota_exceeded';
+    }
+    return 'error';
+  }
+};
