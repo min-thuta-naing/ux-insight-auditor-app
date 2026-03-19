@@ -254,18 +254,18 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
             return row.join(",");
         });
 
-        const csvContent = "data:text/csv;charset=utf-8," 
-            + headers.join(",") + "\n"
-            + csvRows.join("\n");
+        const csvContent = headers.join(",") + "\n" + csvRows.join("\n");
 
-        const encodedUri = encodeURI(csvContent);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
+        link.setAttribute("href", url);
         const filename = roundNum ? `ux_audit_${assignmentId}_round_${roundNum}_db_export.csv` : `ux_audit_${assignmentId}_db_export.csv`;
         link.setAttribute("download", filename);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     return (
