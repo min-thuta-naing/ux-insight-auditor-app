@@ -134,3 +134,12 @@ export interface StudentProfile {
   institutionName?: string;
   updatedAt: number;
 }
+
+export interface UserManagementItem {
+  uid: string;
+  email: string;
+  role: 'student' | 'professor';
+  firstName: string;
+  lastName: string;
+  studentId?: string;
+}

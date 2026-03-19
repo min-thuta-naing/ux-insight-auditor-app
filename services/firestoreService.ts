@@ -15,7 +15,7 @@ import {
     onSnapshot
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { Assignment, StudentSubmission, ProfessorProfile, StudentProfile, SavedAudit } from "../types";
+import { Assignment, StudentSubmission, ProfessorProfile, StudentProfile, SavedAudit, UserManagementItem } from "../types";
 
 const ASSIGNMENTS_COLLECTION = "assignments";
 const SUBMISSIONS_COLLECTION = "submissions";
@@ -451,4 +451,41 @@ export const testFirestoreConnection = async (): Promise<boolean> => {
         console.error("Firestore Connection Test Failed:", error);
         return false;
     }
+};
+
+/**
+ * Fetches all users (students and professors) for the management dashboard
+ */
+export const getAllUsers = async (): Promise<UserManagementItem[]> => {
+    const studentsSnap = await getDocs(collection(db, STUDENTS_COLLECTION));
+    const professorsSnap = await getDocs(collection(db, PROFESSORS_COLLECTION));
+    
+    const students = studentsSnap.docs.map(doc => ({
+        uid: doc.id,
+        email: doc.data().email || '',
+        firstName: doc.data().firstName || '',
+        lastName: doc.data().lastName || '',
+        studentId: doc.data().studentId || '',
+        role: 'student' as const
+    }));
+
+    const professors = professorsSnap.docs.map(doc => ({
+        uid: doc.id,
+        email: doc.data().email || '',
+        firstName: doc.data().firstName || '',
+        lastName: doc.data().lastName || '',
+        role: 'professor' as const
+    }));
+
+    return [...professors, ...students];
+};
+
+/**
+ * Deletes a user profile document from the corresponding collection based on role.
+ * Does not delete the Firebase Auth user entirely, just the profile data from Firestore.
+ */
+export const deleteUserProfile = async (uid: string, role: string) => {
+    const collectionName = role === 'professor' ? PROFESSORS_COLLECTION : STUDENTS_COLLECTION;
+    const docRef = doc(db, collectionName, uid);
+    await deleteDoc(docRef);
 };

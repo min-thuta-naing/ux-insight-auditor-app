@@ -20,6 +20,7 @@ import { ProfessorProfilePage } from './pages/ProfessorProfilePage';
 import { ProfessorSubmissionDetailPage } from './pages/ProfessorSubmissionDetailPage';
 import { ProfessorLayout } from './pages/ProfessorLayout';
 import { ProfessorLandingPage } from './pages/ProfessorLandingPage';
+import { ProfessorUsersPage } from './pages/ProfessorUsersPage';
 
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { VerifyEmailPage } from './components/VerifyEmailPage';
@@ -385,6 +386,9 @@ const App: React.FC = () => {
           } />
           <Route path="profile" element={
             <ProfessorProfilePage user={user} />
+          } />
+          <Route path="users" element={
+            <ProfessorUsersPage />
           } />
           <Route path="submission" element={
             <ProfessorSubmissionDetailPage submission={currentProfessorSubmission} />
