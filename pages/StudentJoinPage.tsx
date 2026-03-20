@@ -107,9 +107,24 @@ export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
                 }
             }
 
-            // Check if student already started this assignment
-            const latestSub = await getLatestSubmission(user.uid, assignment.id);
-            if (latestSub) {
+            // Check if student already started this assignment and if they have remaining attempts for Round 1
+            const submissions = await getSubmissionsByStudent(user.uid);
+            const assignmentSubs = submissions.filter(s => s.assignmentId === assignment.id);
+            const latestRoundNum = assignmentSubs.length > 0 ? Math.max(...assignmentSubs.map(s => s.roundNumber)) : 0;
+            
+            let currentRound = 1;
+            if (latestRoundNum > 0) {
+                const subsInLatestRound = assignmentSubs.filter(s => s.roundNumber === latestRoundNum).length;
+                const maxSubsForLatestRound = assignment.studentMaxSubmissions?.[user.uid]?.[latestRoundNum.toString()] || 1;
+                
+                if (subsInLatestRound < maxSubsForLatestRound) {
+                    currentRound = latestRoundNum;
+                } else {
+                    currentRound = latestRoundNum + 1;
+                }
+            }
+
+            if (currentRound > 1) {
                 showToast("Assignment already started", "info", "Use 'Continue Next Round' and your session code to progress.");
                 setJoinMode('next');
                 return;
@@ -149,7 +164,18 @@ export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
                 return;
             }
 
-            const currentRound = subToContinue.roundNumber + 1;
+            const assignmentSubs = submissions.filter(s => s.assignmentId === fullAssignment.id);
+            const latestRoundNum = Math.max(...assignmentSubs.map(s => s.roundNumber));
+            const subsInLatestRound = assignmentSubs.filter(s => s.roundNumber === latestRoundNum).length;
+            const maxSubsForLatestRound = fullAssignment.studentMaxSubmissions?.[user.uid]?.[latestRoundNum.toString()] || 1;
+            
+            let currentRound;
+            if (subsInLatestRound < maxSubsForLatestRound) {
+                currentRound = latestRoundNum;
+            } else {
+                currentRound = latestRoundNum + 1;
+            }
+
             const maxRounds = fullAssignment.roundsCount || 1;
 
             if (currentRound > maxRounds) {

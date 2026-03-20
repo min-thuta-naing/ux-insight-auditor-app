@@ -87,6 +87,7 @@ export interface Assignment {
   roundStatus: 'open' | 'closed'; // Status of the currentRound
   roundStatuses?: { [roundNumber: string]: 'open' | 'closed' }; // Status for each round
   roundMaxAudits?: { [roundNumber: string]: number }; // Max audits allowed per round
+  studentMaxSubmissions?: { [studentUid: string]: { [roundNumber: string]: number } }; // Add multiple submission attempts for specific students
 }
 
 export interface StudentSubmission {

@@ -136,8 +136,22 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                         setRoundsCount(asg.roundsCount || 1);
                         setProfCurrentRound(asg.currentRound || 1);
 
-                        const latest = await getLatestSubmission(user.uid, assignmentId);
-                        const detected = latest ? latest.roundNumber + 1 : 1;
+                        const submissions = await getSubmissionsByStudent(user.uid);
+                        const assignmentSubs = submissions.filter(s => s.assignmentId === assignmentId);
+                        const latestRoundNum = assignmentSubs.length > 0 ? Math.max(...assignmentSubs.map(s => s.roundNumber)) : 0;
+                        
+                        let detected = 1;
+                        if (latestRoundNum > 0) {
+                            const subsInLatestRound = assignmentSubs.filter(s => s.roundNumber === latestRoundNum).length;
+                            const maxSubsForLatestRound = asg.studentMaxSubmissions?.[user.uid]?.[latestRoundNum.toString()] || 1;
+                            
+                            if (subsInLatestRound < maxSubsForLatestRound) {
+                                detected = latestRoundNum;
+                            } else {
+                                detected = latestRoundNum + 1;
+                            }
+                        }
+                        
                         setRoundNumber(detected);
 
                         const specificStatus = (asg.roundStatuses && asg.roundStatuses[detected.toString()]) ||

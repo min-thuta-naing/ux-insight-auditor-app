@@ -57,9 +57,13 @@ export const submitAssignment = (
     refCode,
     studentName,
     studentId,
+    studentUid: 'mock-uid',
     assignmentId,
+    professorId: 'mock-prof',
     timestamp: Date.now(),
-    auditData
+    auditData,
+    roundNumber: 1,
+    sessionCode: 'mock-code'
   };
 
   try {

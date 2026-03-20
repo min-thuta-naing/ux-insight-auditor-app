@@ -16,6 +16,29 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, o
     const [success, setSuccess] = useState(false);
     const [email, setEmail] = useState<string | null>(null);
 
+    // Password requirements state
+    const [passwordRequirements, setPasswordRequirements] = useState({
+        length: false,
+        lowercase: false,
+        uppercase: false,
+        number: false,
+        special: false
+    });
+
+    const validatePassword = (pass: string) => {
+        const requirements = {
+            length: pass.length >= 6,
+            lowercase: /[a-z]/.test(pass),
+            uppercase: /[A-Z]/.test(pass),
+            number: /[0-9]/.test(pass),
+            special: /[!@#$%^&*(),.?":{}|<>]/.test(pass)
+        };
+        setPasswordRequirements(requirements);
+        return Object.values(requirements).every(Boolean);
+    };
+
+    const isPasswordValid = Object.values(passwordRequirements).every(Boolean);
+
     useEffect(() => {
         const verify = async () => {
             try {
@@ -32,6 +55,12 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, o
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (!isPasswordValid) {
+            setError("Please meet all password requirements");
+            return;
+        }
+
         if (newPassword !== confirmPassword) {
             setError("Passwords do not match");
             return;
@@ -47,7 +76,11 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, o
                 onSuccess();
             }, 3000);
         } catch (err: any) {
-            setError(err.message || "Failed to reset password. Please try again.");
+            let message = err.message || "Failed to reset password. Please try again.";
+            if (message.startsWith("Firebase: ")) {
+                message = message.replace("Firebase: ", "").trim();
+            }
+            setError(message);
         } finally {
             setLoading(false);
         }
@@ -104,13 +137,49 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, o
                             <input
                                 type="password"
                                 required
-                                minLength={6}
                                 value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full pl-10 pr-4 py-4 bg-slate-50 border-2 border-[#D4C9BE] rounded-3xl focus:ring-4 focus:ring-student-500/10 focus:border-student-500 outline-none transition-all placeholder:text-slate-300"
+                                onChange={(e) => {
+                                    setNewPassword(e.target.value);
+                                    validatePassword(e.target.value);
+                                }}
+                                className={`w-full pl-10 pr-4 py-4 bg-slate-50 border-2 outline-none transition-all placeholder:text-slate-300 rounded-3xl ${newPassword.length > 0 && !isPasswordValid
+                                    ? 'border-red-400 focus:ring-4 focus:ring-red-500/10'
+                                    : 'border-[#D4C9BE] focus:ring-4 focus:ring-student-500/10 focus:border-student-500'
+                                    }`}
                                 placeholder="••••••••"
                             />
                         </div>
+
+                        {newPassword.length > 0 && (
+                            <div className="mt-4 space-y-3 animate-fadeIn">
+                                <p className={`text-sm font-medium transition-colors ${!isPasswordValid ? 'text-red-800' : 'text-slate-600'}`}>
+                                    Please create a password that meets all requirements below
+                                </p>
+
+                                <div className="space-y-2 ml-1">
+                                    <RequirementItem
+                                        met={passwordRequirements.length}
+                                        text="At least 6 characters"
+                                    />
+                                    <RequirementItem
+                                        met={passwordRequirements.lowercase}
+                                        text="1 lowercase letter"
+                                    />
+                                    <RequirementItem
+                                        met={passwordRequirements.uppercase}
+                                        text="1 uppercase letter"
+                                    />
+                                    <RequirementItem
+                                        met={passwordRequirements.number}
+                                        text="1 number"
+                                    />
+                                    <RequirementItem
+                                        met={passwordRequirements.special}
+                                        text="1 special character"
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div>
@@ -163,3 +232,22 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, o
         </div>
     );
 };
+
+const RequirementItem: React.FC<{ met: boolean; text: string }> = ({ met, text }) => (
+    <div className="flex items-center gap-3 group">
+        <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ${met ? 'bg-emerald-600' : 'bg-slate-300'}`}>
+            {met ? (
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+            ) : (
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            )}
+        </div>
+        <span className={`text-sm font-medium transition-colors duration-300 ${met ? 'text-emerald-700' : 'text-slate-500'}`}>
+            {text}
+        </span>
+    </div>
+);

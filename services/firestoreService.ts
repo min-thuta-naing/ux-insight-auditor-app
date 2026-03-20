@@ -220,6 +220,24 @@ export const updateRoundMaxAudits = async (assignmentId: string, roundNumber: nu
 };
 
 /**
+ * Updates the max submissions allowed for a specific student in a specific round
+ */
+export const updateStudentMaxSubmissions = async (assignmentId: string, studentUid: string, roundNumber: number, newMax: number) => {
+    const docRef = doc(db, ASSIGNMENTS_COLLECTION, assignmentId);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return;
+
+    const data = docSnap.data() as Assignment;
+    const studentMaxSubmissions = data.studentMaxSubmissions || {};
+    if (!studentMaxSubmissions[studentUid]) {
+        studentMaxSubmissions[studentUid] = {};
+    }
+    studentMaxSubmissions[studentUid][roundNumber.toString()] = newMax;
+
+    await updateDoc(docRef, { studentMaxSubmissions });
+};
+
+/**
  * Adds a new round to an assignment and sets it as the current active round
  */
 export const addNewRound = async (assignmentId: string) => {

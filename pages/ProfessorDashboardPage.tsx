@@ -1,7 +1,7 @@
 import React from 'react';
 import { StudentSubmission, Assignment } from '../types';
 import { clearAllSubmissions } from '../services/storageService';
-import { subscribeToAssignment, updateRoundStatus, addNewRound, updateRoundMaxAudits, testFirestoreConnection } from '../services/firestoreService';
+import { subscribeToAssignment, updateRoundStatus, addNewRound, updateRoundMaxAudits, testFirestoreConnection, updateStudentMaxSubmissions } from '../services/firestoreService';
 import { testGeminiConnection } from '../services/geminiService';
 import { useToast } from '../components/Toast';
 import { RoundConfirmationModal } from '../components/RoundConfirmationModal';
@@ -29,6 +29,7 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
     const [assignment, setAssignment] = React.useState<Assignment | null>(null);
     const [updating, setUpdating] = React.useState(false);
     const [activeTab, setActiveTab] = React.useState(1);
+    const [searchQuery, setSearchQuery] = React.useState('');
     const [isConfirmModalOpen, setIsConfirmModalOpen] = React.useState(false);
     
     // API Status State
@@ -105,6 +106,34 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
             showToast(`Round ${rNum} Audit Limit updated to ${newMax}`, 'success');
         } catch (err) {
             showToast("Failed to update audit limit", "error");
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleAddSubmissionAttempt = async (studentUid: string, roundNum: number) => {
+        if (!assignment) return;
+        setUpdating(true);
+        try {
+            const currentMax = assignment.studentMaxSubmissions?.[studentUid]?.[roundNum.toString()] || 1;
+            const newMax = currentMax + 1;
+            
+            await updateStudentMaxSubmissions(assignmentId, studentUid, roundNum, newMax);
+            
+            const updatedStudentMaxSubmissions = { ...(assignment.studentMaxSubmissions || {}) };
+            if (!updatedStudentMaxSubmissions[studentUid]) {
+                updatedStudentMaxSubmissions[studentUid] = {};
+            }
+            updatedStudentMaxSubmissions[studentUid][roundNum.toString()] = newMax;
+            
+            setAssignment({
+                ...assignment,
+                studentMaxSubmissions: updatedStudentMaxSubmissions
+            });
+            
+            showToast(`Extra submission attempt granted (Total: ${newMax})`, 'success');
+        } catch (err) {
+            showToast("Failed to grant attempt", "error");
         } finally {
             setUpdating(false);
         }
@@ -352,7 +381,7 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
                                     {/* Limit Section */}
                                     <div className="flex-1 flex flex-col gap-2 items-center">
                                         <div className="w-full flex justify-center">
-                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-800">Limit per student</span>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-800">API Limit per student</span>
                                         </div>
                                         <div className="flex items-center bg-slate-50 border-2 border-slate-100 rounded-2xl p-1 shadow-sm h-12 min-w-[160px]">
                                             <button
@@ -467,6 +496,22 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
                                 Download Round {activeTab} CSV
                             </button>
                         </div>
+                        <div className="mt-4">
+                            <div className="relative max-w-md">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Search by student name, ID, or session code..."
+                                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none transition-all placeholder-slate-400 shadow-sm"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                        </div>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-slate-200">
@@ -483,12 +528,21 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-slate-200">
-                                {submissions.filter(s => (s.roundNumber || 1) === activeTab).length === 0 ? (
-                                    <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-400 font-medium italic">No submissions for Round {activeTab} yet.</td></tr>
-                                ) : (
-                                    submissions
-                                        .filter(s => (s.roundNumber || 1) === activeTab)
-                                        .map((sub, idx) => {
+                                {(() => {
+                                    const filteredSubmissions = submissions.filter(s => {
+                                        const matchesRound = (s.roundNumber || 1) === activeTab;
+                                        const matchesSearch = searchQuery === '' || 
+                                            s.studentName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                            (s.studentId && s.studentId.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                                            (s.sessionCode && s.sessionCode.toLowerCase().includes(searchQuery.toLowerCase()));
+                                        return matchesRound && matchesSearch;
+                                    });
+
+                                    if (filteredSubmissions.length === 0) {
+                                        return <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-400 font-medium italic">No submissions found matching your criteria.</td></tr>;
+                                    }
+
+                                    return filteredSubmissions.map((sub, idx) => {
                                             const score = Math.round(sub.auditData.reports.reduce((acc, r) => acc + r.overall_score, 0) / sub.auditData.reports.length);
                                             return (
                                                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
@@ -512,12 +566,15 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                        <button onClick={() => handleLoadSubmission(sub)} className="text-indigo-600 hover:text-indigo-900 font-bold text-sm bg-indigo-50 px-3 py-1.5 rounded-lg transition-all">Details</button>
+                                                        <div className="flex justify-end gap-2">
+                                                            <button disabled={updating} onClick={() => handleAddSubmissionAttempt(sub.studentUid, sub.roundNumber || 1)} className="text-emerald-600 hover:text-emerald-900 font-bold text-sm bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-all" title={`Grant another submission attempt for Round ${sub.roundNumber || '1'}`}>+1 Attempt</button>
+                                                            <button onClick={() => handleLoadSubmission(sub)} className="text-indigo-600 hover:text-indigo-900 font-bold text-sm bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-all">Details</button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             )
                                         })
-                                )}
+                                })()}
                             </tbody>
                         </table>
                     </div>

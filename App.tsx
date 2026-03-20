@@ -192,9 +192,11 @@ const App: React.FC = () => {
           oobCode={oobCode}
           onSuccess={() => {
             window.history.replaceState({}, document.title, "/");
+            navigate('/student/login');
           }}
           onBack={() => {
             window.history.replaceState({}, document.title, "/");
+            navigate('/student/login');
           }}
         />
       </div>
@@ -212,6 +214,7 @@ const App: React.FC = () => {
           }}
           onBack={() => {
             window.history.replaceState({}, document.title, "/");
+            navigate('/student/login');
           }}
         />
       </div>
