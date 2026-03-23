@@ -113,6 +113,10 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
 
     const handleAddSubmissionAttempt = async (studentUid: string, roundNum: number) => {
         if (!assignment) return;
+        if (!studentUid) {
+            showToast("Cannot Grant Attempt", "error", "This is an older submission missing a user ID.");
+            return;
+        }
         setUpdating(true);
         try {
             const currentMax = assignment.studentMaxSubmissions?.[studentUid]?.[roundNum.toString()] || 1;
@@ -544,6 +548,9 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
 
                                     return filteredSubmissions.map((sub, idx) => {
                                             const score = Math.round(sub.auditData.reports.reduce((acc, r) => acc + r.overall_score, 0) / sub.auditData.reports.length);
+                                            const grantedAttempts = assignment?.studentMaxSubmissions?.[sub.studentUid]?.[(sub.roundNumber || 1).toString()] || 1;
+                                            const extraAttempts = grantedAttempts - 1;
+
                                             return (
                                                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                                                     <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-600 font-medium">{new Date(sub.timestamp).toLocaleString()}</td>
@@ -566,9 +573,14 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                        <div className="flex justify-end gap-2">
-                                                            <button disabled={updating} onClick={() => handleAddSubmissionAttempt(sub.studentUid, sub.roundNumber || 1)} className="text-emerald-600 hover:text-emerald-900 font-bold text-sm bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-all" title={`Grant another submission attempt for Round ${sub.roundNumber || '1'}`}>+1 Attempt</button>
-                                                            <button onClick={() => handleLoadSubmission(sub)} className="text-indigo-600 hover:text-indigo-900 font-bold text-sm bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-all">Details</button>
+                                                        <div className="flex justify-end gap-2 items-center">
+                                                            {extraAttempts > 0 && (
+                                                                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md border border-emerald-200">
+                                                                    {extraAttempts} More {extraAttempts === 1 ? 'Attempt' : 'Attempts'} 
+                                                                </span>
+                                                            )}
+                                                            <button disabled={updating} onClick={() => handleAddSubmissionAttempt(sub.studentUid, sub.roundNumber || 1)} className="text-emerald-600 hover:text-emerald-900 font-bold text-sm bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-all border border-transparent hover:border-emerald-200" title={`Grant another submission attempt for Round ${sub.roundNumber || '1'}`}>+1 Attempt</button>
+                                                            <button onClick={() => handleLoadSubmission(sub)} className="text-indigo-600 hover:text-indigo-900 font-bold text-sm bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-all border border-transparent hover:border-indigo-200">Details</button>
                                                         </div>
                                                     </td>
                                                 </tr>

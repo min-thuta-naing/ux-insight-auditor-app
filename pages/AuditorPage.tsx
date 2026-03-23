@@ -138,11 +138,11 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
 
                         const submissions = await getSubmissionsByStudent(user.uid);
                         const assignmentSubs = submissions.filter(s => s.assignmentId === assignmentId);
-                        const latestRoundNum = assignmentSubs.length > 0 ? Math.max(...assignmentSubs.map(s => s.roundNumber)) : 0;
+                        const latestRoundNum = assignmentSubs.length > 0 ? Math.max(...assignmentSubs.map(s => Number(s.roundNumber) || 1)) : 0;
                         
                         let detected = 1;
                         if (latestRoundNum > 0) {
-                            const subsInLatestRound = assignmentSubs.filter(s => s.roundNumber === latestRoundNum).length;
+                            const subsInLatestRound = assignmentSubs.filter(s => (Number(s.roundNumber) || 1) === latestRoundNum).length;
                             const maxSubsForLatestRound = asg.studentMaxSubmissions?.[user.uid]?.[latestRoundNum.toString()] || 1;
                             
                             if (subsInLatestRound < maxSubsForLatestRound) {
@@ -162,8 +162,12 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                         const usage = await getAuditUsage(user.uid, assignmentId, detected);
                         setAuditUsageCount(usage);
 
-                        // Set max audits for this round
-                        const roundLimit = asg.roundMaxAudits?.[detected.toString()] || 2;
+                        // Set max audits for this round (scale by allowed submissions so they have enough quota to resubmit)
+                        let roundLimit = asg.roundMaxAudits?.[detected.toString()] || 2;
+                        const maxSubsForDetectedRound = asg.studentMaxSubmissions?.[user.uid]?.[detected.toString()] || 1;
+                        if (maxSubsForDetectedRound > 1) {
+                            roundLimit = roundLimit * maxSubsForDetectedRound;
+                        }
                         setMaxAudits(roundLimit);
                     }
                 } catch (err) {

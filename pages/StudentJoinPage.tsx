@@ -110,11 +110,11 @@ export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
             // Check if student already started this assignment and if they have remaining attempts for Round 1
             const submissions = await getSubmissionsByStudent(user.uid);
             const assignmentSubs = submissions.filter(s => s.assignmentId === assignment.id);
-            const latestRoundNum = assignmentSubs.length > 0 ? Math.max(...assignmentSubs.map(s => s.roundNumber)) : 0;
+            const latestRoundNum = assignmentSubs.length > 0 ? Math.max(...assignmentSubs.map(s => Number(s.roundNumber) || 1)) : 0;
             
             let currentRound = 1;
             if (latestRoundNum > 0) {
-                const subsInLatestRound = assignmentSubs.filter(s => s.roundNumber === latestRoundNum).length;
+                const subsInLatestRound = assignmentSubs.filter(s => (Number(s.roundNumber) || 1) === latestRoundNum).length;
                 const maxSubsForLatestRound = assignment.studentMaxSubmissions?.[user.uid]?.[latestRoundNum.toString()] || 1;
                 
                 if (subsInLatestRound < maxSubsForLatestRound) {
@@ -165,8 +165,8 @@ export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
             }
 
             const assignmentSubs = submissions.filter(s => s.assignmentId === fullAssignment.id);
-            const latestRoundNum = Math.max(...assignmentSubs.map(s => s.roundNumber));
-            const subsInLatestRound = assignmentSubs.filter(s => s.roundNumber === latestRoundNum).length;
+            const latestRoundNum = assignmentSubs.length > 0 ? Math.max(...assignmentSubs.map(s => Number(s.roundNumber) || 1)) : 1;
+            const subsInLatestRound = assignmentSubs.filter(s => (Number(s.roundNumber) || 1) === latestRoundNum).length;
             const maxSubsForLatestRound = fullAssignment.studentMaxSubmissions?.[user.uid]?.[latestRoundNum.toString()] || 1;
             
             let currentRound;
