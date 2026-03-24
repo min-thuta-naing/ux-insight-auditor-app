@@ -1,4 +1,5 @@
 import React from 'react';
+import JSZip from 'jszip';
 import { StudentSubmission, Assignment } from '../types';
 import { clearAllSubmissions } from '../services/storageService';
 import { subscribeToAssignment, updateRoundStatus, addNewRound, updateRoundMaxAudits, testFirestoreConnection, updateStudentMaxSubmissions } from '../services/firestoreService';
@@ -31,6 +32,7 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
     const [activeTab, setActiveTab] = React.useState(1);
     const [searchQuery, setSearchQuery] = React.useState('');
     const [isConfirmModalOpen, setIsConfirmModalOpen] = React.useState(false);
+    const [downloadingImages, setDownloadingImages] = React.useState(false);
     
     // API Status State
     const [geminiStatus, setGeminiStatus] = React.useState<'loading' | 'success' | 'error' | 'quota_exceeded'>('loading');
@@ -301,6 +303,53 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
         URL.revokeObjectURL(url);
     };
 
+    const handleDownloadAllImages = async (roundNum: number) => {
+        const filteredSubs = submissions.filter(s => (s.roundNumber || 1) === roundNum);
+        if (filteredSubs.length === 0) {
+            showToast("No images to download for this round.", "info");
+            return;
+        }
+
+        setDownloadingImages(true);
+        const zip = new JSZip();
+        
+        try {
+            const downloadPromises = filteredSubs.map(async (s) => {
+                const imgUrl = s.auditData.imageSrc;
+                if (!imgUrl) return;
+
+                try {
+                    const response = await fetch(imgUrl);
+                    const blob = await response.blob();
+                    // Clean filename: remove special chars from student name
+                    const cleanName = s.studentName.replace(/[^a-z0-0]/gi, '_').toLowerCase();
+                    const fileName = `Round${roundNum}_${s.sessionCode || 'unnamed'}_${cleanName}.png`;
+                    zip.file(fileName, blob);
+                } catch (err) {
+                    console.error(`Failed to download image for ${s.studentName}`, err);
+                }
+            });
+
+            await Promise.all(downloadPromises);
+            
+            const content = await zip.generateAsync({ type: "blob" });
+            const url = URL.createObjectURL(content);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `ux_audit_images_round_${roundNum}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showToast(`Downloaded images for Round ${roundNum}`, "success");
+        } catch (err) {
+            showToast("Failed to generate ZIP file", "error");
+        } finally {
+            setDownloadingImages(false);
+        }
+    };
+
     return (
         <div className="p-8 space-y-6">
             <div className="max-w-7xl mx-auto space-y-6">
@@ -492,13 +541,31 @@ export const ProfessorDashboardPage: React.FC<ProfessorDashboardPageProps> = ({
                                     ))}
                                 </div>
                             </div>
-                            <button 
-                                onClick={() => handleExport(activeTab)} 
-                                className="text-white hover:bg-indigo-700 text-xs font-black flex items-center gap-2 bg-indigo-600 px-4 py-2 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95"
-                            >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                Download Round {activeTab} CSV
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    disabled={downloadingImages}
+                                    onClick={() => handleDownloadAllImages(activeTab)} 
+                                    className={`text-xs font-black flex items-center gap-2 px-4 py-2 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 ${
+                                        downloadingImages 
+                                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                    }`}
+                                >
+                                    {downloadingImages ? (
+                                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    ) : (
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    )}
+                                    {downloadingImages ? 'Zipping...' : `Download Round ${activeTab} Images`}
+                                </button>
+                                <button 
+                                    onClick={() => handleExport(activeTab)} 
+                                    className="text-white hover:bg-indigo-700 text-xs font-black flex items-center gap-2 bg-indigo-600 px-4 py-2 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                    Download Round {activeTab} CSV
+                                </button>
+                            </div>
                         </div>
                         <div className="mt-4">
                             <div className="relative max-w-md">

@@ -166,7 +166,8 @@ export const AuditorPage: React.FC<AuditorPageProps> = ({
                         let roundLimit = asg.roundMaxAudits?.[detected.toString()] || 2;
                         const maxSubsForDetectedRound = asg.studentMaxSubmissions?.[user.uid]?.[detected.toString()] || 1;
                         if (maxSubsForDetectedRound > 1) {
-                            roundLimit = roundLimit * maxSubsForDetectedRound;
+                            // Each additional attempt grants exactly 1 more audit
+                            roundLimit = roundLimit + (maxSubsForDetectedRound - 1);
                         }
                         setMaxAudits(roundLimit);
                     }

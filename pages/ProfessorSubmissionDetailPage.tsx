@@ -193,7 +193,42 @@ export const ProfessorSubmissionDetailPage: React.FC<ProfessorSubmissionDetailPa
                 <div className="lg:col-span-7 sticky top-8">
                     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
-                            <h2 className="text-xl font-normal text-slate-800">Visual Analysis</h2>
+                            <div className="flex items-center gap-4">
+                                <h2 className="text-xl font-normal text-slate-800">Visual Analysis</h2>
+                                <button
+                                    onClick={async () => {
+                                        if (!imageSrc) return;
+                                        try {
+                                            const response = await fetch(imageSrc);
+                                            const blob = await response.blob();
+                                            const blobUrl = URL.createObjectURL(blob);
+                                            
+                                            const link = document.createElement('a');
+                                            link.href = blobUrl;
+                                            const cleanName = submission.studentName.replace(/[^a-z0-0]/gi, '_').toLowerCase();
+                                            const filename = `Round${submission.roundNumber || 1}_${submission.sessionCode || 'unnamed'}_${cleanName}.png`;
+                                            link.download = filename;
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                            
+                                            // Clean up the blob URL after download
+                                            setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+                                        } catch (error) {
+                                            console.error("Download failed:", error);
+                                            // Fallback: open in new tab if blob fetch fails
+                                            window.open(imageSrc, '_blank');
+                                        }
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-black transition-all group/dl"
+                                    title="Download submitted image"
+                                >
+                                    <svg className="w-3.5 h-3.5 group-hover/dl:translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Download Image
+                                </button>
+                            </div>
                             <div className="flex gap-4">
                                 <label className="inline-flex items-center cursor-pointer">
                                     <input type="checkbox" checked={showAllIssues} onChange={e => setShowAllIssues(e.target.checked)} className="sr-only peer" />
