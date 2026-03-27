@@ -318,6 +318,12 @@ const App: React.FC = () => {
               user={user}
               studentName={studentName}
               studentId={studentId}
+              setSelectedImage={setSelectedImage}
+              setReports={setReports}
+              setSelectedHeuristic={setSelectedHeuristic}
+              setSelectedPersona={setSelectedPersona}
+              setAuditScope={setAuditScope}
+              setWcagLevel={setWcagLevel}
             />
           </ProtectedRoute>
         } />

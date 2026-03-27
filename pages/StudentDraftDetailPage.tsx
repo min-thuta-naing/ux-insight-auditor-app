@@ -11,10 +11,26 @@ import { HistoryModal } from '../components/HistoryModal';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 import { useToast } from '../components/Toast';
 
-export const StudentDraftDetailPage: React.FC<{ user: User | null; studentName: string; studentId: string }> = ({
+export const StudentDraftDetailPage: React.FC<{ 
+    user: User | null; 
+    studentName: string; 
+    studentId: string;
+    setSelectedImage: (image: string | null) => void;
+    setReports: (reports: any[]) => void;
+    setSelectedHeuristic: (h: string) => void;
+    setSelectedPersona: (p: any) => void;
+    setAuditScope: (s: any) => void;
+    setWcagLevel: (l: any) => void;
+}> = ({
     user,
     studentName,
-    studentId
+    studentId,
+    setSelectedImage,
+    setReports,
+    setSelectedHeuristic,
+    setSelectedPersona,
+    setAuditScope,
+    setWcagLevel
 }) => {
     const navigate = useNavigate();
     const { draftId } = useParams<{ draftId: string }>();
@@ -71,6 +87,21 @@ export const StudentDraftDetailPage: React.FC<{ user: User | null; studentName: 
         return <div className="min-h-screen flex items-center justify-center bg-[#F9F8F6]">Loading draft...</div>;
     }
 
+    const handleContinue = () => {
+        if (!draft) return;
+        
+        // Sync to global state
+        setSelectedImage(draft.imageSrc);
+        setReports(draft.reports);
+        setSelectedHeuristic(draft.heuristicMode);
+        setSelectedPersona(draft.persona);
+        setAuditScope(draft.auditScope || 'UX');
+        setWcagLevel(draft.wcagLevel || 'AA');
+        
+        // Navigate
+        navigate(`/student/auditor/${draft.assignmentId}`);
+    };
+
     const reports = draft.reports;
     const allFindings = reports.flatMap(r => r.findings);
     const avgUxScore = reports.length > 0
@@ -123,7 +154,7 @@ export const StudentDraftDetailPage: React.FC<{ user: User | null; studentName: 
                         <div className="bg-student-50 border border-student-200 p-6 rounded-3xl text-center flex flex-col justify-center min-h-[160px]">
                             <p className="text-student-800 font-semibold mb-4 text-sm">This draft is not yet submitted. You can continue working on it in the Auditor.</p>
                             <button 
-                                onClick={() => navigate(`/student/auditor/${draft.assignmentId}`)}
+                                onClick={handleContinue}
                                 className="w-full py-3 bg-student-600 text-white rounded-2xl font-bold hover:bg-student-700 transition-colors"
                             >
                                 Continue in Auditor

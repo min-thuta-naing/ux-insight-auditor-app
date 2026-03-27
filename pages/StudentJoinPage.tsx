@@ -201,6 +201,10 @@ export const StudentJoinPage: React.FC<StudentJoinPageProps> = ({
     };
 
     const handleLoadAudit = (audit: SavedAudit) => {
+        setSelectedImage(audit.imageSrc);
+        setReports(audit.reports);
+        setSelectedHeuristic(audit.heuristicMode);
+        setSelectedPersona(audit.persona);
         setAuditScope(audit.auditScope || 'UX');
         setWcagLevel(audit.wcagLevel || 'AA');
         setIsHistoryOpen(false);
