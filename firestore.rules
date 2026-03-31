@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Professors Collection
+    match /professors/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // Students Collection
+    match /students/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // Assignments Collection
+    match /assignments/{assignmentId} {
+      // Allow read for signed-in users (students joining and professors viewing)
+      allow read: if isSignedIn();
+      // Allow creation/modification for the owning professor
+      allow create: if isSignedIn() && request.resource.data.professorId == request.auth.uid;
+      allow update, delete: if isOwner(resource.data.professorId);
+    }
+
+    // Submissions Collection
+    match /submissions/{submissionId} {
+      // Students can read their own submissions, Professors can read submissions for their assignments
+      allow read: if isSignedIn() && (isOwner(resource.data.studentUid) || isOwner(resource.data.professorId));
+      // Students can create submissions
+      allow create: if isSignedIn() && request.resource.data.studentUid == request.auth.uid;
+      // Usually submissions aren't updated/deleted by students, but professors might manage them
+      allow update, delete: if isSignedIn() && (isOwner(resource.data.studentUid) || isOwner(resource.data.professorId));
+    }
+
+    // Drafts Collection
+    match /drafts/{draftId} {
+      allow read, write: if isSignedIn() && (isOwner(resource.data.uid) || isOwner(request.resource.data.uid));
+    }
+
+    // Audit Usage Collection
+    match /audit_usage/{usageId} {
+      allow read, write: if isSignedIn() && (isOwner(resource.data.studentUid) || isOwner(request.resource.data.studentUid));
+    }
+  }
+}
