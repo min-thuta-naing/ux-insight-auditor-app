@@ -3,8 +3,8 @@ import { verifyResetCode, confirmReset } from '../services/authService';
 
 interface ResetPasswordPageProps {
     oobCode: string;
-    onSuccess: () => void;
-    onBack: () => void;
+    onSuccess: (email: string) => void;
+    onBack: (email?: string) => void;
 }
 
 export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, onSuccess, onBack }) => {
@@ -73,7 +73,7 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, o
             await confirmReset(oobCode, newPassword);
             setSuccess(true);
             setTimeout(() => {
-                onSuccess();
+                onSuccess(email!);
             }, 3000);
         } catch (err: any) {
             let message = err.message || "Failed to reset password. Please try again.";
@@ -106,7 +106,7 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, o
                 <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Password Reset!</h2>
                 <p className="text-slate-500 mb-10 font-medium font-medium leading-relaxed">Your password has been successfully updated. Redirecting to login...</p>
                 <button
-                    onClick={onSuccess}
+                    onClick={() => onSuccess(email!)}
                     className="w-full py-4 px-4 rounded-2xl bg-student-600 text-white font-black text-lg hover:bg-student-700 shadow-xl shadow-student-200/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                     Go to login
@@ -222,7 +222,7 @@ export const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ oobCode, o
 
                 <div className="mt-8 text-center">
                     <button
-                        onClick={onBack}
+                        onClick={() => onBack(email || undefined)}
                         className="text-xs text-slate-400 hover:text-slate-600 uppercase tracking-widest font-black"
                     >
                         Back to Log In

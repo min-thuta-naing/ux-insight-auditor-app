@@ -186,18 +186,31 @@ const App: React.FC = () => {
   const mode = params.get('mode');
 
   if (mode === 'resetPassword' && oobCode) {
+    const handleRedirect = async (email?: string) => {
+        window.history.replaceState({}, document.title, "/");
+        if (!email) {
+            navigate('/student/login');
+            return;
+        }
+
+        const { ALLOWED_PROFESSOR_DOMAINS, ALLOWED_PROFESSOR_EMAILS } = await import('./constants');
+        const lowerEmail = email.toLowerCase();
+        const isProfessorEmail = ALLOWED_PROFESSOR_EMAILS.some(e => e.toLowerCase() === lowerEmail) ||
+                                ALLOWED_PROFESSOR_DOMAINS.some(d => lowerEmail.endsWith(`@${d.toLowerCase()}`));
+        
+        if (isProfessorEmail) {
+            navigate('/instructor-auth-research-2026/login');
+        } else {
+            navigate('/student/login');
+        }
+    };
+
     return (
       <div className="min-h-screen bg-[#F9F8F6] flex items-center justify-center p-4">
         <ResetPasswordPage
           oobCode={oobCode}
-          onSuccess={() => {
-            window.history.replaceState({}, document.title, "/");
-            navigate('/student/login');
-          }}
-          onBack={() => {
-            window.history.replaceState({}, document.title, "/");
-            navigate('/student/login');
-          }}
+          onSuccess={(email) => handleRedirect(email)}
+          onBack={(email) => handleRedirect(email)}
         />
       </div>
     );

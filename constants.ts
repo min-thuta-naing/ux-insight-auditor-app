@@ -65,6 +65,5 @@ export const HEURISTICS: Record<string, HeuristicDef> = {
 
 export const ALLOWED_PROFESSOR_DOMAINS = ['mfu.ac.th'];
 export const ALLOWED_PROFESSOR_EMAILS = [
-  'raise.mfu@gmail.com',
-  'thutaminn118@gmail.com'
+  'raise.mfu@gmail.com'
 ];
