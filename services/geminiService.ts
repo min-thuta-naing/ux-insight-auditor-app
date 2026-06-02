@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 import { HeuristicDef, Persona, UsabilityReport, AuditScope, WcagLevel, Finding } from "../types";
+import { loadGuidelines } from "../utils/csvParser";
 
 // Initialize Gemini API
-// Note: In a production app, you should use a backend to proxy these requests to keep your API key secure.
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
@@ -24,45 +24,45 @@ export const analyzeImage = async (
     }
   });
 
+  // Load local knowledge base to inject into the prompt
+  const uxGuidelines = await loadGuidelines('ux');
+  const webGuidelines = await loadGuidelines('web');
+  const reasoningGuidelines = await loadGuidelines('reasoning');
+  
+  // We take a slice of the most relevant rules to keep the prompt size manageable
+  const localRules = JSON.stringify([...uxGuidelines, ...webGuidelines, ...reasoningGuidelines].slice(0, 60));
+
   const isInclusive = scope === 'Inclusive';
 
   const prompt = `
-    You are a world-class UX Auditor and Accessibility Expert. 
-    Perform a professional UX audit on the attached website screenshot.
+    You are a professional UI/UX Auditor. You are auditing a student's work based on specific internal design guidelines.
     
-    TARGET PERSONA: ${persona}
-    SPECIFIC HEURISTIC TO AUDIT: ${heuristic.id} - ${heuristic.name}
-    HEURISTIC DEFINITION: ${heuristic.definition}
-    AUDIT FOCUS: ${heuristic.instruction}
-    
-    ${isInclusive ? `ACCESSIBILITY SCOPE: Include WCAG 2.2 Level ${wcagLevel} audit findings.` : 'SCOPE: UX ONLY. Do not include any WCAG or accessibility-related findings.'}
+    INTERNAL DESIGN GUIDELINES (Knowledge Base):
+    ${localRules}
+
+    AUDIT PARAMETERS:
+    - Target Persona: ${persona}
+    - Specific Heuristic: ${heuristic.id} - ${heuristic.name}
+    - Heuristic Definition: ${heuristic.definition}
+    - Audit Focus: ${heuristic.instruction}
+    - Scope: ${isInclusive ? `UX + WCAG 2.2 Level ${wcagLevel}` : 'UX ONLY'}
 
     INSTRUCTIONS:
-    1. Analyze the image carefully based on the specified heuristic and persona.
-    2. Identify specific UI elements that violate the heuristic${isInclusive ? ' or accessibility standards' : ''}.
-    3. For each issue, provide:
-       - element_name: Name of the UI component.
-       - location_box: [ymin, xmin, ymax, xmax] - normalized coordinates (0-1000) surrounding the element.
-       - issue_category: Short category (e.g., "Visibility", "Contrast", "Navigation").
-       - issue_description: Clear description of what is wrong.
-       - severity: "Critical", "High", "Medium", or "Low".
-       - reasoning: Why this is an issue for the ${persona}.
-       - suggestion: How to fix it.
-    4. Calculate an overall UX score (0-100) for the page relative to this heuristic.
-    ${isInclusive ? '5. Calculate an accessibility score (0-100).' : ''}
-    6. Provide a concise executive summary.
-
-    RESPONSE FORMAT:
-    The response MUST be a JSON object following this interface:
+    1. Look at the attached UI screenshot. 
+    2. Check for violations specifically mentioned in the INTERNAL DESIGN GUIDELINES.
+    3. Use your visual reasoning to identify if the layout is cluttered, unorganized, or has poor visual hierarchy (especially if it looks like the messy Arngren.net style).
+    4. For each finding, you MUST provide accurate coordinates (ymin, xmin, ymax, xmax) in 0-1000 normalized format.
+    5. Severity levels: "Critical", "High", "Medium", "Low".
+    
+    RESPONSE JSON FORMAT:
     {
-      "overall_score": number,
-      "accessibility_score"?: number,
-      "violation_count": number,
+      "overall_score": number (0-100),
+      "accessibility_score"?: number (0-100),
       "executive_summary": string,
       "findings": [
         {
           "category": "UX" | "WCAG",
-          "rule_id": string (the heuristic ID or WCAG criteria ID),
+          "rule_id": string (The ID or Name from the guidelines or heuristic),
           "element_name": string,
           "location_box": { "ymin": number, "xmin": number, "ymax": number, "xmax": number },
           "issue_category": string,
@@ -79,7 +79,7 @@ export const analyzeImage = async (
     const imagePart: Part = {
       inlineData: {
         data: base64Image,
-        mimeType: "image/png" // Assuming PNG, but Gemini handles most formats
+        mimeType: "image/jpeg"
       }
     };
 
@@ -88,11 +88,7 @@ export const analyzeImage = async (
     const parsedData = JSON.parse(responseText);
 
     const rawFindings = parsedData.findings || [];
-    const filteredFindings = isInclusive
-      ? rawFindings
-      : rawFindings.filter((f: any) => f.category !== 'WCAG');
-
-    const findingsWithIds = filteredFindings.map((f: any, index: number) => ({
+    const findingsWithIds = rawFindings.map((f: any, index: number) => ({
       ...f,
       id: `${heuristic.id}-${index + 1}`
     }));
@@ -101,7 +97,7 @@ export const analyzeImage = async (
     const baseScore = parsedData.overall_score || 0;
 
     return {
-      audit_id: `gemini-${Date.now()}`,
+      audit_id: `gemini-local-${Date.now()}`,
       audit_timestamp: new Date().toISOString(),
       heuristic_id: heuristic.id,
       heuristic_name: heuristic.name,
@@ -114,17 +110,11 @@ export const analyzeImage = async (
       findings: findingsWithIds
     };
   } catch (error: any) {
-    console.error("Gemini Analysis Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Failed to analyze image with Gemini";
-    
-    // Check for rate limit / quota errors
-    if (errorMessage.toLowerCase().includes("429") || 
-        errorMessage.toLowerCase().includes("quota") || 
-        errorMessage.toLowerCase().includes("limit") ||
-        errorMessage.toLowerCase().includes("credit")) {
+    console.error("Gemini Hybrid Analysis Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Analysis failed";
+    if (errorMessage.includes("429") || errorMessage.includes("quota")) {
       throw new Error("RATE_LIMIT_EXCEEDED");
     }
-    
     throw new Error(errorMessage);
   }
 };
@@ -137,14 +127,13 @@ export const testGeminiConnection = async (): Promise<'success' | 'quota_exceede
   if (!API_KEY) return 'error';
   
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
     const result = await model.generateContent("ping");
     const text = result.response.text();
     return text ? 'success' : 'error';
   } catch (error: any) {
     console.error("Gemini Connection Test Failed:", error);
     const errorMessage = error?.message?.toLowerCase() || "";
-    // Check for both quota exhaustion (429) and credit-related failures
     if (errorMessage.includes("429") || errorMessage.includes("quota") || errorMessage.includes("limit") || errorMessage.includes("credit")) {
       return 'quota_exceeded';
     }
